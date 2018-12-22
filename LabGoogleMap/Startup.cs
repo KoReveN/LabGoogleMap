@@ -34,6 +34,12 @@ namespace LabGoogleMap
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.Configure<ApiBehaviorOptions>(options =>
+            {
+                options.SuppressConsumesConstraintForFormFileParameters = true;
+                options.SuppressInferBindingSourcesForParameters = true;
+                options.SuppressModelStateInvalidFilter = true;
+            });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
@@ -101,37 +107,6 @@ namespace LabGoogleMap
 
         }
     }
-
-
-    public class RouteValuePresentConstraint : IRouteConstraint
-    {
-        public bool Match(HttpContext httpContext, IRouter route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
-        {
-            if (values.ContainsKey(routeKey))
-            {
-                return true;
-            }
-            return false;
-        }
-    }
-
-    public class ValuesConstraint : IRouteConstraint
-    {
-        private readonly string[] validOptions;
-        public ValuesConstraint(string options)
-        {
-            validOptions = options.Split('|');
-        }
-
-        public bool Match(HttpContext httpContext, IRouter route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)
-        {
-            object value;
-            if (values.TryGetValue(routeKey, out value) && value != null)
-            {
-                return validOptions.Contains(value.ToString(), StringComparer.OrdinalIgnoreCase);
-            }
-            return false;
-        }
-    }
+    
 
 }

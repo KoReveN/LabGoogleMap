@@ -166,12 +166,18 @@ namespace LabGoogleMap.Controllers
 
 
 
-    //[Route("api/[controller]")]
-    //[ApiController]
-    //public class ProductsController : ControllerBase
-    //{
-    //    //public Ac
-    //}
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ProductsController : ControllerBase
+    {
+       public  IActionResult Test ()
+        {
+            return new JsonNetResult(new
+            {
+                success = false
+            });
+        }
+    }
 
 
 
