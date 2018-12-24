@@ -31,91 +31,81 @@
     <script defer>
         //require(["jquery", "kendogrids", "ajax", "toastr"], function ($, kendoGrid, ajax, toastr) {
 
-            // Settings
-            var urlTeamMapMarkerAdd = "@Url.Action("TeamMapMarkerAdd", "HomeApi")";
-            var urlTeamMapMarkersRemove = "@Url.Action("TeamMapMarkersRemove", "HomeApi")";
-            var colorDataSource =  @Html.Raw(Json.Serialize(Model.MarkerIcons.ToArray()));
-            var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray())); //Json.Encode(Model.Markers.ToArray());
+        // Settings
+        var urlTeamMapMarkerAdd = "@Url.Action("TeamMapMarkerAdd")";
+        var urlTeamMapMarkersRemove = "@Url.Action("TeamMapMarkersRemove")";
+        var colorDataSource =  @Html.Raw(Json.Serialize(Model.MarkerIcons.ToArray()));
+        var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray())); //Json.Encode(Model.Markers.ToArray());
+
+        var map;
+        var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        var labelIndex = 1;
+        var markerIconUrl = "http://maps.google.com/mapfiles/kml/paddle/blu-circle.png";
+        var markers = [];
 
             // Actions
-            var actions = {
-                setMapMarker: function (lat, lng, markerIconId) {
-                    ajax.json({
-                        url: urlTeamMapMarkerAdd,
-                        data: {
-                            lat: lat,
-                            lng: lng,
-                            markerIconId: markerIconId,
-                        },
-                        success: function (responce) {
-                            if (responce.success) {
-                                toastr.success("Created new marker!");
-                                console.log("Created new marker!")
-                            } else {
-                                toastr.error("Fail: " + responce.message);
-                                console.log("Fail: " + responce.message)
-                            }
-                        },
-                        fail: function () {
-                            console.log("Failed ajax query....")
-                            toastr.error("Failed ajax query....");
+        var actions = {
+            addMapMarker: function (lat, lng, markerIconId) {
+                ajax.json({
+                    url: urlTeamMapMarkerAdd,
+                    data: {
+                        Lat: lat,
+                        Lng: lng,
+                        MarkerIconId: markerIconId,
+                    },
+                    success: function (responce) {
+                        if (responce.success) {
+                            toastr.success("Created new marker!");
+                            console.log("Created new marker!")
+                        } else {
+                            toastr.error("Fail: " + responce.message);
+                            console.log("Fail: " + responce.message)
                         }
-                    });
-                },
-                removeMapMarkers: function (lat, lng, color) {
-                    ajax.json({
-                        url: urlTeamMapMarkersRemove,
-                        success: function (responce) {
-                            if (responce.success) {
-                                toastr.success("Markers was deleted!");
-                                console.log("Markers was deleted!");
-                                // Clean map markers.
-                                clearMarkers();
-                                markers = [];
-
-                            } else {
-                                toastr.error("Fail: " + responce.message);
-                                console.log("Fail: " + responce.message)
-                            }
-                        },
-                        fail: function () {
-                            console.log("Failed ajax query....")
-                            toastr.error("Failed ajax query....");
-                        }
-                    });
-                },
-
-
-            }
-
-        //        public int MarkerIconId { get; set; }
-        //public string Color { get; set; }
-        //public string IconUrl { get; set; }
-
-
-
-            $('#colorSelect').kendoDropDownList(
-                {
-                    dataSource: colorDataSource,
-                    dataTextField: "color",
-                    dataValueField: "iconUrl",
-                    change: function (e) {
-                        // markerIconUrl = this.value();
+                    },
+                    fail: function () {
+                        console.log("Failed ajax query....")
+                        toastr.error("Failed ajax query....");
                     }
                 });
+            },
+            removeMapMarkers: function (lat, lng, color) {
+                ajax.json({
+                    url: urlTeamMapMarkersRemove,
+                    success: function (responce) {
+                        if (responce.success) {
+                            toastr.success("Markers was deleted!");
+                            console.log("Markers was deleted!");
+                            // Clean map markers.
+                            clearMarkers();
+                            markers = [];
 
-            $('#deleteMarkers').click(deleteMarkers);
+                        } else {
+                            toastr.error("Fail: " + responce.message);
+                            console.log("Fail: " + responce.message)
+                        }
+                    },
+                    fail: function () {
+                        console.log("Failed ajax query....")
+                        toastr.error("Failed ajax query....");
+                    }
+                });
+            },
 
 
-
-            var map;
-            var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            var labelIndex = 1;
-            var markerIconUrl = "http://maps.google.com/mapfiles/kml/paddle/blu-circle.png";
-            var markers = [];
-
-
-            function initMap() {
+        };
+        var helper = {
+            initIconsDropDownList: function () {
+                $('#colorSelect').kendoDropDownList(
+                    {
+                        dataSource: colorDataSource,
+                        dataTextField: "color",
+                        dataValueField: "iconUrl",
+                        change: function (e) {
+                            // markerIconUrl = this.value();
+                        }
+                    });
+            },
+            initGoogleMap: function () {
                 var myLatLng = { lat: 46.481, lng: 30.758 };
 
                 map = new google.maps.Map(document.getElementById('map'), {
@@ -124,18 +114,12 @@
                 });
 
 
-                // This event listener calls addMarker() when the map is clicked.
-                google.maps.event.addListener(map, 'click', function (event) {
-                    addMarker(event.latLng, map, $('#colorSelect').data('kendoDropDownList').value());
-                    actions.setMapMarker(event.latLng.lat(), event.latLng.lng(), $('#colorSelect').data('kendoDropDownList').dataItem().markerIconId)
-                });
-
                 // Add a markers from the viewModel.
                 $.each(modelMarkers, function (index, item) {
-                    addMarker(
-                        myLatLng = { lat: item.Lat, lng: item.Lng },
+                    helper.addMarker(
+                        myLatLng = { lat: item.lat, lng: item.lng },
                         map,
-                        colorDataSource.find(x => x.Name == item.Color).Value
+                        colorDataSource.find(x => x.markerIconId == item.markerIconId).iconUrl
                     )
                 });
 
@@ -143,41 +127,9 @@
                 //    fillColor: '#fff',
                 //    strokeColor: '#000'
                 //}));
-            }
-
-            // Deletes all markers in the array by removing references to them.
-            function deleteMarkers() {
-                actions.removeMapMarkers();
-                //clearMarkers();
-                //markers = [];
-            }
-
-            // Removes the markers from the map, but keeps them in the array.
-            function clearMarkers() {
-                setMapOnAll(null);
-            }
-
-            // Sets the map on all markers in the array.
-            function setMapOnAll(map) {
-                for (var i = 0; i < markers.length; i++) {
-                    markers[i].setMap(map);
-                }
-            }
-
-            function customIcon(opts) {
-                return Object.assign({
-                    //path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -2,-30 a 2,2 0 1,1 4,0 2,2 0 1,1 -4,0',
-                    path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
-                    fillColor: '#34495e',
-                    fillOpacity: 1,
-                    strokeColor: '#000',
-                    strokeWeight: 2,
-                    scale: 1,
-                }, opts);
-            }
-
+            },
             // Adds a marker to the map.
-            function addMarker(location, map, markerIcon) {
+            addMarker: function (location, map, markerIcon) {
                 // Add the marker at the clicked location, and add the next-available label
                 // from the array of alphabetical characters.
                 var marker = new google.maps.Marker({
@@ -200,8 +152,66 @@
                 });
                 labelIndex++;
                 markers.push(marker);
-            };
+            },
+        }
 
+
+
+
+        // Deletes all markers in the array by removing references to them.
+        function deleteMarkers() {
+            actions.removeMapMarkers();
+            //clearMarkers();
+            //markers = [];
+        }
+
+
+
+
+
+
+        // Removes the markers from the map, but keeps them in the array.
+        function clearMarkers() {
+            setMapOnAll(null);
+        }
+
+        // Sets the map on all markers in the array.
+        function setMapOnAll(map) {
+            for (var i = 0; i < markers.length; i++) {
+                markers[i].setMap(map);
+            }
+        }
+
+        function customIcon(opts) {
+            return Object.assign({
+                //path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -2,-30 a 2,2 0 1,1 4,0 2,2 0 1,1 -4,0',
+                path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                fillColor: '#34495e',
+                fillOpacity: 1,
+                strokeColor: '#000',
+                strokeWeight: 2,
+                scale: 1,
+            }, opts);
+        }
+
+
+
+
+        function registerEventHandlers()
+        {
+            // This event listener calls addMarker() when the map is clicked.
+            google.maps.event.addListener(map, 'click', function (event) {
+                helper.addMarker(event.latLng, map, $('#colorSelect').data('kendoDropDownList').value());
+                actions.addMapMarker(
+                    event.latLng.lat(),
+                    event.latLng.lng(),
+                    $('#colorSelect').data('kendoDropDownList').dataItem().markerIconId
+                )
+            });
+
+            $('#deleteMarkers').click(deleteMarkers);
+
+        }
 
 
 
@@ -211,9 +221,12 @@
             //}
 
         function _init() {
-            google.maps.event.addDomListener(window, 'load', initMap);
-                //setModelMarkers();
-                //registerEventHandlers();
+            //google.maps.event.addDomListener(window, 'load', helper.initGoogleMap);
+            helper.initGoogleMap();
+            //setModelMarkers();
+            helper.initIconsDropDownList();
+
+                registerEventHandlers();
             }
 
             $(document).ready(function () {

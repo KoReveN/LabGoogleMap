@@ -35,58 +35,16 @@ namespace LabGoogleMap.Controllers
             return View(model);
         }
 
-        public class Data
-        {
-            public string Lat { get; set; }
-            public string Lng { get; set; }
-            public string MarkerIconId { get; set; }
-        }
+
 
 
         [HttpPost]
-        //public JsonNetResult TeamMapMarkerAdd([FromBody]Data markerData)
-        public JsonNetResult TeamMapMarkerAdd1(string Lat)
-        {
-            var s1 = Request.Form["Lat"];
-
-            var s2 = RouteData.Values["Lat"];
-
-            var s3 = Request.Query["Lat"];
-
-            return new JsonNetResult(new
-            {
-                Lat = Lat,
-                success = true
-            });
-        }
-
-        [HttpPost]
-        //public JsonNetResult TeamMapMarkerAdd([FromBody]Data markerData)
-        public JsonNetResult TeamMapMarkerAdd2(string Lat, string Lng)
-        {
-            return new JsonNetResult(new
-            {
-                Lat = Lat,
-                success = true
-            });
-        }
-
-
-        [HttpPost]
-        //public JsonNetResult TeamMapMarkerAdd([FromBody]Data markerData)
-        public JsonNetResult TeamMapMarkerAdd(string Lat, string Lng, string MarkerIconId)
+        public JsonNetResult TeamMapMarkerAdd([FromBody]Marker marker)
         {
             try
             {
-                //this.Request.Body.Position = 0;
-                var result = new System.IO.StreamReader(this.Request.Body).ReadToEnd();
 
-                //var controller = RouteData.Values["controller"].ToString();
-                //var action = RouteData.Values["action"].ToString();
-                //return Content($"controller: {controller} | action: {action}");
-
-                var customerID = 1;
-
+                marker.CustomerID = 1;
                 //var newMarker = new Marker()
                 //{
                 //    Lat = lat,
@@ -95,11 +53,12 @@ namespace LabGoogleMap.Controllers
                 //    CustomerID = customerID
                 //};
 
-                //mapService.AddMarker(newMarker);
+                mapService.AddMarker(marker);
 
                 return new JsonNetResult(new
                 {
-                    success = true
+                    success = true,
+                    marker = marker
                 });
             }
             catch (Exception ex)
