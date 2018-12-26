@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Domain;
-using Domain.Services;
+using Domain.Infrastracture;
+using Domain.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -12,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Service;
 
 namespace LabGoogleMap
 {
@@ -34,18 +36,28 @@ namespace LabGoogleMap
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.Configure<ApiBehaviorOptions>(options =>
-            {
-                options.SuppressConsumesConstraintForFormFileParameters = true;
-                options.SuppressInferBindingSourcesForParameters = true;
-                options.SuppressModelStateInvalidFilter = true;
-            });
+            //services.Configure<ApiBehaviorOptions>(options =>
+            //{
+            //    options.SuppressConsumesConstraintForFormFileParameters = true;
+            //    options.SuppressInferBindingSourcesForParameters = true;
+            //    options.SuppressModelStateInvalidFilter = true;
+            //});
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            services.AddTransient<MapService, MapService>();
-            services.AddTransient<LabContext, LabContext>();
             
+            services.AddTransient<LabContext, LabContext>();
+            services.AddTransient <IDbFactory, DbFactory> ();
+
+            services.AddTransient<IMarkerRepository, MarkerRepository>();
+            services.AddTransient<IMarkerIconRepository, MarkerIconRepository>();
+
+            services.AddTransient<IMarkerService, MarkerService>();
+            services.AddTransient<IMarkerIconService, MarkerIconService>();
+
+
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

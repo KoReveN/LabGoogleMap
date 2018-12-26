@@ -7,19 +7,22 @@ using Microsoft.AspNetCore.Mvc;
 using LabGoogleMap.Models;
 using System.Data.SqlClient;
 using Domain.Entities;
-using Domain.Services;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Service;
 
 namespace LabGoogleMap.Controllers
 {
 
     public class HomeController : Controller
     {
-        private readonly MapService mapService;
+        //private readonly MapService mapService;
+        private readonly IMarkerService markerService;
+        private readonly IMarkerIconService markerIconService;
 
-        public HomeController(MapService mapService)
+        public HomeController(IMarkerService markerService, IMarkerIconService markerIconService)
         {
-            this.mapService = mapService;
+            this.markerService = markerService;
+            this.markerIconService = markerIconService;
         }
 
 
@@ -28,8 +31,8 @@ namespace LabGoogleMap.Controllers
             var customerID = 1;
             var model = new MapViewModel()
             {
-                MarkerIcons = mapService.GetMarkerIcons(),
-                Markers = mapService.GetMarkers(customerID)
+                MarkerIcons = markerIconService.GetMarkerIcons(),
+                Markers = markerService.GetMarkers(customerID)
             };
 
             return View(model);
@@ -53,7 +56,7 @@ namespace LabGoogleMap.Controllers
                 //    CustomerID = customerID
                 //};
 
-                mapService.AddMarker(marker);
+                markerService.AddMarker(marker);
 
                 return new JsonNetResult(new
                 {
@@ -78,7 +81,7 @@ namespace LabGoogleMap.Controllers
             {
                 var customerID = 1;
 
-                mapService.RemoveMarkers(customerID);
+                markerService.RemoveMarkers(customerID);
 
                 return new JsonNetResult(new
                 {
