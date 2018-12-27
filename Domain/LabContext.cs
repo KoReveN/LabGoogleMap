@@ -19,6 +19,7 @@ namespace Domain
 
         public LabContext() 
         {
+            //Database.EnsureDeleted();
             Database.EnsureCreated();
             DatabaseSeed();
         }

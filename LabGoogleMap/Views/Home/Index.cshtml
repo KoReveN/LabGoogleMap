@@ -13,6 +13,13 @@
 
 <div id="test1"></div>
 
+<div>
+    Current marker:
+    @*@Html.GetEnumSelectList(typeof(Domain.Entities.MarkerType))*@
+
+    <select id="markerType" asp-items="@Html.GetEnumSelectList(typeof(Domain.Entities.MarkerType))"></select>
+</div>
+
 <div class="row">
     <div id="colorSelect"></div>
     <input id="deleteMarkers" type=button value="Delete Markers">
@@ -119,7 +126,8 @@
                     helper.addMarker(
                         myLatLng = { lat: item.lat, lng: item.lng },
                         map,
-                        colorDataSource.find(x => x.markerIconId == item.markerIconId).iconUrl
+                        colorDataSource.find(x => x.markerIconId == item.markerIconId).iconUrl,
+                        helper.getMarkerLable(item.index, item.markerType)
                     )
                 });
 
@@ -129,13 +137,13 @@
                 //}));
             },
             // Adds a marker to the map.
-            addMarker: function (location, map, markerIcon) {
+            addMarker: function (location, map, markerIcon, lable) {
                 // Add the marker at the clicked location, and add the next-available label
                 // from the array of alphabetical characters.
                 var marker = new google.maps.Marker({
                     position: location,
                     label: {
-                        text: labelIndex.toString(),//labels[labelIndex++ % labels.length],
+                        text: lable, //labelIndex.toString(),//labels[labelIndex++ % labels.length],
                         // color: "#eb3a44",
                         fontSize: "16px",
                         fontWeight: "bold"
@@ -153,6 +161,37 @@
                 labelIndex++;
                 markers.push(marker);
             },
+            getMarkerLable: function (markerIndex, markerType)
+            {
+                let lable;
+                (markerType == 1) ? lable = "S" :
+                    (markerType == 2) ? lable = "E" :
+                        lable = markerIndex.toString();
+                return lable;
+            },
+            getFreeMarkerIndex: function () {
+                let markerType = parseInt($("#markerType").val());
+
+                switch (markerType) {
+                    case 1: // markerType = Start Point
+                        // NEED CHECK FOR OLD START POINT
+                        return 0;
+                        break;
+                    case 2: // markerType = End Point
+                        // NEED CHECK FOR OLD END POINT
+                        return 10;
+                        break;
+                    default: // markerType = Way Point
+                        for (var i = 1; i < 10; i++) {
+                            if (markers.find(x => x.index == i)) {
+                                return i;
+                            }
+                        }
+                        return 1; // default first way point index
+                        break;
+                }
+
+            }
         }
 
 
@@ -201,7 +240,12 @@
         {
             // This event listener calls addMarker() when the map is clicked.
             google.maps.event.addListener(map, 'click', function (event) {
-                helper.addMarker(event.latLng, map, $('#colorSelect').data('kendoDropDownList').value());
+                helper.addMarker(
+                    event.latLng, 
+                    map, 
+                    $('#colorSelect').data('kendoDropDownList').value(),
+                    helper.getMarkerLable(helper.getFreeMarkerIndex(), parseInt($("#markerType").val()))
+                );
                 actions.addMapMarker(
                     event.latLng.lat(),
                     event.latLng.lng(),
