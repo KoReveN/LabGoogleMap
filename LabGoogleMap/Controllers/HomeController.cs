@@ -9,6 +9,7 @@ using System.Data.SqlClient;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Service;
+using Domain.Repositories;
 
 namespace LabGoogleMap.Controllers
 {
@@ -24,6 +25,12 @@ namespace LabGoogleMap.Controllers
             this.markerService = markerService;
             this.markerIconService = markerIconService;
         }
+
+        //public HomeController()
+        //{
+        //    this.markerService = new MarkerService(IMarkerRepository markerRepository);
+        //    this.markerIconService = new MarkerIconService(IMarkerIconRepository markerIconRepository);
+        //}
 
 
         public IActionResult Index()
@@ -42,7 +49,7 @@ namespace LabGoogleMap.Controllers
 
 
         [HttpPost]
-        public JsonNetResult TeamMapMarkerAdd([FromBody]Marker marker)
+        public IActionResult TeamMapMarkerAdd([FromBody]Marker marker)
         {
             try
             {

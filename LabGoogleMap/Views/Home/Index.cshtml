@@ -52,14 +52,10 @@
 
             // Actions
         var actions = {
-            addMapMarker: function (lat, lng, markerIconId) {
+            addMapMarker: function (data) {
                 ajax.json({
                     url: urlTeamMapMarkerAdd,
-                    data: {
-                        Lat: lat,
-                        Lng: lng,
-                        MarkerIconId: markerIconId,
-                    },
+                    data: data,
                     success: function (responce) {
                         if (responce.success) {
                             toastr.success("Created new marker!");
@@ -69,9 +65,9 @@
                             console.log("Fail: " + responce.message)
                         }
                     },
-                    fail: function () {
-                        console.log("Failed ajax query....")
-                        toastr.error("Failed ajax query....");
+                    fail: function (msg) {
+                        console.log("Failed ajax query.... " + msg);
+                        toastr.error("Failed ajax query.... " + msg);
                     }
                 });
             },
@@ -123,12 +119,14 @@
 
                 // Add a markers from the viewModel.
                 $.each(modelMarkers, function (index, item) {
-                    helper.addMarker(
+                    let marker = helper.createMarker(
                         myLatLng = { lat: item.lat, lng: item.lng },
                         map,
                         colorDataSource.find(x => x.markerIconId == item.markerIconId).iconUrl,
-                        helper.getMarkerLable(item.index, item.markerType)
-                    )
+                        helper.getMarkerLable(item.index, item.markerType),
+                        item.markerType, item.index
+                    );
+                    helper.addMarker(marker);
                 });
 
                 //marker.setIcon(customIcon({
@@ -136,10 +134,7 @@
                 //    strokeColor: '#000'
                 //}));
             },
-            // Adds a marker to the map.
-            addMarker: function (location, map, markerIcon, lable) {
-                // Add the marker at the clicked location, and add the next-available label
-                // from the array of alphabetical characters.
+            createMarker: function (location, map, markerIcon, lable, markerType, index) {
                 var marker = new google.maps.Marker({
                     position: location,
                     label: {
@@ -156,8 +151,17 @@
                     //icon: customIcon({
                     //    fillColor: $('#colorSelect').data('kendoDropDownList').value() //markerIconUrl
                     //}),
-                    map: map
+                    map: map,
+                    markerType: markerType,
+                    index: index
                 });
+                return marker;
+            },
+            // Adds a marker to the map.
+            addMarker: function (marker) {
+                // Add the marker at the clicked location, and add the next-available label
+                // from the array of alphabetical characters.
+
                 labelIndex++;
                 markers.push(marker);
             },
@@ -169,12 +173,17 @@
                         lable = markerIndex.toString();
                 return lable;
             },
-            getFreeMarkerIndex: function () {
-                let markerType = parseInt($("#markerType").val());
-
+            getFreeMarkerIndex: function (markerType) {
                 switch (markerType) {
                     case 1: // markerType = Start Point
-                        // NEED CHECK FOR OLD START POINT
+                        if (markers.find(x => x.markerType == 1)) {
+                            // NEED exempt FOR OLD START POINT
+                            debugger;
+                            //markers.forEach((marker) => {
+
+                            //})
+                        }
+                        
                         return 0;
                         break;
                     case 2: // markerType = End Point
@@ -240,16 +249,21 @@
         {
             // This event listener calls addMarker() when the map is clicked.
             google.maps.event.addListener(map, 'click', function (event) {
+                 let markerType = parseInt($("#markerType").val());
                 helper.addMarker(
                     event.latLng, 
                     map, 
                     $('#colorSelect').data('kendoDropDownList').value(),
-                    helper.getMarkerLable(helper.getFreeMarkerIndex(), parseInt($("#markerType").val()))
+                    helper.getMarkerLable(helper.getFreeMarkerIndex(markerType), parseInt($("#markerType").val()))
                 );
                 actions.addMapMarker(
-                    event.latLng.lat(),
-                    event.latLng.lng(),
-                    $('#colorSelect').data('kendoDropDownList').dataItem().markerIconId
+                    {
+                        Lat: event.latLng.lat(),
+                        Lng: event.latLng.lng(),
+                        MarkerIconId: $('#colorSelect').data('kendoDropDownList').dataItem().markerIconId,
+                        MarkerType: markerType,
+                        Index: helper.getFreeMarkerIndex(markerType)
+                    }                  
                 )
             });
 
