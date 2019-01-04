@@ -1,6 +1,10 @@
 ﻿
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
+using System;
+using System.IO;
 using System.Text;
 
 namespace Microsoft.AspNetCore.Mvc
@@ -18,6 +22,7 @@ namespace Microsoft.AspNetCore.Mvc
         {
             SerializerSettings = new JsonSerializerSettings();
         }
+
         public JsonNetResult(object data)
         {
             SerializerSettings = new JsonSerializerSettings();
@@ -34,28 +39,35 @@ namespace Microsoft.AspNetCore.Mvc
             this.Data = new { success, message };
         }
 
-        //public override void ExecuteResult(ControllerContext context)
-        //{
-        //    if (context == null)
-        //        throw new ArgumentNullException("context");
+        //public override void ExecuteResult(ControllerContext context) { }
 
-        //    HttpResponseBase response = context.HttpContext.Response;
+        public override void ExecuteResult(ActionContext context)
+        {
+            if (context == null)
+                throw new ArgumentNullException("context");
 
-        //    response.ContentType = !string.IsNullOrEmpty(ContentType)
-        //      ? ContentType
-        //      : "application/json";
+            HttpResponse response = context.HttpContext.Response;
 
-        //    if (ContentEncoding != null)
-        //        response.ContentEncoding = ContentEncoding;
+            response.ContentType = !string.IsNullOrEmpty(ContentType)
+              ? ContentType
+              : "application/json";
 
-        //    if (Data != null)
-        //    {
-        //        JsonTextWriter writer = new JsonTextWriter(response.Output) { Formatting = Formatting };
-        //        JsonSerializer serializer = JsonSerializer.Create(SerializerSettings);
-        //        serializer.Serialize(writer, Data);
+            if (ContentEncoding != null)
+            {
+                var mediaType = new MediaTypeHeaderValue("application/json");
+                mediaType.Encoding = ContentEncoding;
+                response.ContentType = mediaType.ToString();
+            }
+                
 
-        //        writer.Flush();
-        //    }
-        //}
+            if (Data != null)
+            {
+                JsonTextWriter writer = new JsonTextWriter(new StreamWriter(response.Body)) { Formatting = Formatting };
+                JsonSerializer serializer = JsonSerializer.Create(SerializerSettings);
+                serializer.Serialize(writer, Data);
+
+                writer.Flush();
+            }
+        }
     }
 }

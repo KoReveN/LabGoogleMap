@@ -26,13 +26,6 @@ namespace LabGoogleMap.Controllers
             this.markerIconService = markerIconService;
         }
 
-        //public HomeController()
-        //{
-        //    this.markerService = new MarkerService(IMarkerRepository markerRepository);
-        //    this.markerIconService = new MarkerIconService(IMarkerIconRepository markerIconRepository);
-        //}
-
-
         public IActionResult Index()
         {
             var customerID = 1;
@@ -51,6 +44,15 @@ namespace LabGoogleMap.Controllers
         [HttpPost]
         public IActionResult TeamMapMarkerAdd([FromBody]Marker marker)
         {
+
+            //return Json(new { success = true });
+
+            //return new JsonNetResult(new
+            //{
+            //    success = true
+            //});
+
+
             try
             {
 
@@ -68,7 +70,7 @@ namespace LabGoogleMap.Controllers
                 return new JsonNetResult(new
                 {
                     success = true,
-                    marker = marker
+                    marker
                 });
             }
             catch (Exception ex)
@@ -88,7 +90,7 @@ namespace LabGoogleMap.Controllers
             {
                 var customerID = 1;
 
-                markerService.RemoveMarkers(customerID);
+                //markerService.RemoveMarkers(customerID);
 
                 return new JsonNetResult(new
                 {
@@ -135,20 +137,31 @@ namespace LabGoogleMap.Controllers
 
 
 
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProductsController : ControllerBase
+    // [Route("api/[controller]")]
+    //    [ApiController]
+    public class ProductsController : Controller// : ControllerBase
     {
-       public  IActionResult Test ()
+        [HttpPost]
+        public IActionResult Test()
+        {
+            return Json(new { success = true, data = 555});
+        }
+
+        [HttpPost]
+        public IActionResult Test1()
         {
             return new JsonNetResult(new
             {
-                success = false
+                success = true
             });
         }
+
+        [HttpPost]
+        public IActionResult Test2()
+        {
+            return Ok(Json("12345"));
+        }
     }
-
-
 
 
 }

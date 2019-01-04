@@ -59,10 +59,11 @@
                     success: function (responce) {
                         if (responce.success) {
                             toastr.success("Created new marker!");
-                            console.log("Created new marker!")
+                            helper.addMarker(responce.marker);
+                            console.log("Created new marker!");
                         } else {
                             toastr.error("Fail: " + responce.message);
-                            console.log("Fail: " + responce.message)
+                            console.log("Fail: " + responce.message);
                         }
                     },
                     fail: function (msg) {
@@ -119,14 +120,7 @@
 
                 // Add a markers from the viewModel.
                 $.each(modelMarkers, function (index, item) {
-                    let marker = helper.createMarker(
-                        myLatLng = { lat: item.lat, lng: item.lng },
-                        map,
-                        colorDataSource.find(x => x.markerIconId == item.markerIconId).iconUrl,
-                        helper.getMarkerLable(item.index, item.markerType),
-                        item.markerType, item.index
-                    );
-                    helper.addMarker(marker);
+                    helper.addMarker(item);
                 });
 
                 //marker.setIcon(customIcon({
@@ -134,7 +128,7 @@
                 //    strokeColor: '#000'
                 //}));
             },
-            createMarker: function (location, map, markerIcon, lable, markerType, index) {
+            createGoogleMarker: function (location, map, markerIcon, lable, markerType, index) {
                 var marker = new google.maps.Marker({
                     position: location,
                     label: {
@@ -158,7 +152,16 @@
                 return marker;
             },
             // Adds a marker to the map.
-            addMarker: function (marker) {
+            addMarker: function (modelMarker) {
+
+                let marker = helper.createGoogleMarker(
+                    myLatLng = { lat: modelMarker.lat, lng: modelMarker.lng },
+                    map,
+                    colorDataSource.find(x => x.markerIconId == modelMarker.markerIconId).iconUrl,
+                    helper.getMarkerLable(modelMarker.index, modelMarker.markerType),
+                    modelMarker.markerType,
+                    modelMarker.index
+                );
                 // Add the marker at the clicked location, and add the next-available label
                 // from the array of alphabetical characters.
 
@@ -250,12 +253,12 @@
             // This event listener calls addMarker() when the map is clicked.
             google.maps.event.addListener(map, 'click', function (event) {
                  let markerType = parseInt($("#markerType").val());
-                helper.addMarker(
-                    event.latLng, 
-                    map, 
-                    $('#colorSelect').data('kendoDropDownList').value(),
-                    helper.getMarkerLable(helper.getFreeMarkerIndex(markerType), parseInt($("#markerType").val()))
-                );
+                //helper.addMarker(
+                //    event.latLng, 
+                //    map, 
+                //    $('#colorSelect').data('kendoDropDownList').value(),
+                //    helper.getMarkerLable(helper.getFreeMarkerIndex(markerType), parseInt($("#markerType").val()))
+                //);
                 actions.addMapMarker(
                     {
                         Lat: event.latLng.lat(),
