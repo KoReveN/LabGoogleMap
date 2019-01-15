@@ -81,6 +81,11 @@ namespace Domain.Infrastracture
             return dbSet.Where(where).FirstOrDefault<T>();
         }
 
+        public virtual int Count(Expression<Func<T, bool>> where)
+        {
+            return dbSet.Count(where);
+        }
+
         #endregion
 
     }

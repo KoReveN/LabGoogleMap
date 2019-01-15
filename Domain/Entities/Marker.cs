@@ -16,7 +16,7 @@ namespace Domain.Entities
         public MarkerType MarkerType { get; set; }
         public int Index { get; set; }
 
-
+        public string Address { get; set; }
     }
 
     public enum MarkerType
