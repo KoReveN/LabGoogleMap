@@ -70,13 +70,71 @@ namespace LabGoogleMap.Controllers {
         }
 
 
+        [HttpPost]
+        public IActionResult GetGoogleRoute([FromBody] Marker[] markers)
+        {
+            string origin = "", destination = "", wayPoints = "";
+            //List<string> wayPoints = new List<string>();
+
+            foreach (Marker marker in markers)
+            {
+                switch (marker.MarkerType)
+                {
+                    case MarkerType.WayPoint:
+                        if (string.IsNullOrEmpty(wayPoints))
+                        {
+                            wayPoints += $"waypoints=via:{marker.Lat},{marker.Lng}";
+                        } else
+                        {
+                            wayPoints += $"|via:{marker.Lat},{marker.Lng}";
+                        }
+                        break;
+                    case MarkerType.StartPoint:
+                        origin = $"origin={marker.Lat},{marker.Lng}";
+                        break;
+                    case MarkerType.EndPoint:
+                        destination = $"destination={marker.Lat},{marker.Lng}";
+                        break;
+                }
+            }
+
+            string key = @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
+            string url = @"https://maps.googleapis.com/maps/api/directions/json?" + origin + 
+                "&" + destination +
+                "&" + wayPoints +
+                "&key=" + key;
+
+            WebRequest request = WebRequest.Create(url);
+            request.ContentType = "application/json; charset=utf-8";
+            request.Method = WebRequestMethods.Http.Get;
+
+            WebResponse response = request.GetResponse();
+            Stream data = response.GetResponseStream();
+            StreamReader reader = new StreamReader(data);
+            // json-formatted string from maps api
+            string responseFromServer = reader.ReadToEnd();
+            reader.Close();
+            data.Close();
+            response.Close();
+
+            JObject jObj = JObject.Parse(responseFromServer);
+
+            JToken jRoute = jObj["routes"].FirstOrDefault();
+
+            string polyline = jRoute.SelectToken("overview_polyline").SelectToken("points").ToString();
+
+            //string address = jObj["results"].FirstOrDefault().SelectToken("formatted_address").ToString();
+
+            return Json(url);
+        }
+
 
         public string GetGooglGeocodeAddress(Marker marker)
-        { 
+        {
             string key = @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
             string lat = marker.Lat.ToString();
             string lng = marker.Lng.ToString();
-            string url = @"https://maps.googleapis.com/maps/api/geocode/json?latlng="+ lat +","+ lng +"&key=" + key;
+            string url = @"https://maps.googleapis.com/maps/api/geocode/json?latlng=" + lat + "," + lng + "&key=" + key;
 
             WebRequest request = WebRequest.Create(url);
             request.ContentType = "application/json; charset=utf-8";
@@ -98,7 +156,29 @@ namespace LabGoogleMap.Controllers {
             return address;
         }
 
+        [HttpPost]
+        public IActionResult TeamMapMarkerRemove([FromBody] int markerId)
+        {
+            try
+            {
+                markerService.RemoveMarker(markerId);
 
+                return Json(new
+                {
+                    success = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+
+
+        }
 
         [HttpPost]
         public JsonNetResult TeamMapMarkersRemove () {
@@ -132,46 +212,7 @@ namespace LabGoogleMap.Controllers {
             });
         }
 
-        ////public string connectionString = @"data source=(LocalDB)\MSSQLLocalDB;Database=study_google_map;integrated security=True;";
 
-        ////public IActionResult Index()
-        ////{
-        ////    return View();
-        ////}
-
-        //public IActionResult Privacy()
-        //{
-        //    return View();
-        //}
-
-        //[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        //public IActionResult Error()
-        //{
-        //    return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        //}
 
     }
-
-    // [Route("api/[controller]")]
-    //    [ApiController]
-    public class ProductsController : Controller // : ControllerBase
-    {
-        [HttpPost]
-        public IActionResult Test () {
-            return Json (new { success = true, data = 555 });
-        }
-
-        [HttpPost]
-        public IActionResult Test1 () {
-            return new JsonNetResult (new {
-                success = true
-            });
-        }
-
-        [HttpPost]
-        public IActionResult Test2 () {
-            return Ok (Json ("12345"));
-        }
-    }
-
 }

@@ -20,9 +20,11 @@
     <select id="markerType" asp-items="@Html.GetEnumSelectList(typeof(Domain.Entities.MarkerType))"></select>
 </div>
 
+<div class="space-20"></div>
 <div class="row">
     <div id="colorSelect"></div>
     <input id="deleteMarkers" type=button value="Delete Markers">
+    <input id="buildRoute" type=button value="Build route">
 </div>
 
 <div class="space-20"></div>
@@ -38,13 +40,16 @@
 @section scripts
     {
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk" defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk&libraries=geometry"></script>
     <script defer>
         //require(["jquery", "kendogrids", "ajax", "toastr"], function ($, kendoGrid, ajax, toastr) {
 
         // Settings
         var urlTeamMapMarkerAdd = "@Url.Action("TeamMapMarkerAdd")";
         var urlTeamMapMarkersRemove = "@Url.Action("TeamMapMarkersRemove")";
+        var urlTeamMapMarkerRemove = "@Url.Action("TeamMapMarkerRemove")";
         var urlTeamMapMarkersUpdate = "@Url.Action("TeamMapMarkersUpdate")";
+        var urlTeamMapGetRoute = "@Url.Action("GetGoogleRoute")";
         var colorDataSource =  @Html.Raw(Json.Serialize(Model.MarkerIcons.ToArray()));
         var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray())); //Json.Encode(Model.Markers.ToArray());
 
@@ -77,13 +82,33 @@
                                 render.gridRefresh();
                             }
                         } else {
-                            toastr.error("Fail: " + responce.message);
-                            console.log("Fail: " + responce.message);
+                            toastr.error("Fail addMapMarker: " + responce.message);
+                            console.log("Fail addMapMarker: " + responce.message);
                         }
                     },
                     fail: function (msg) {
-                        console.log("Failed ajax query.... " + msg);
-                        toastr.error("Failed ajax query.... " + msg);
+                        console.log("Failed addMapMarker query.... " + msg);
+                        toastr.error("Failed addMapMarker query.... " + msg);
+                    }
+                });
+            },
+            removeMarker: function (markerId) {
+                ajax.json({
+                    url: urlTeamMapMarkerRemove,
+                    data: markerId,
+                    success: function (responce) {
+                        if (responce.success) {
+                            toastr.success("Marker deleted!");
+                            console.log("Marker deleted!");
+                            helper.modelMarkers.removeMarker(markerId);
+                        } else {
+                            toastr.error("Fail removeMarker: " + responce.message);
+                            console.log("Fail removeMarker: " + responce.message);
+                        }
+                    },
+                    fail: function () {
+                        console.log("Failed removeMarker query....");
+                        toastr.error("Failed removeMarker query....");
                     }
                 });
             },
@@ -101,12 +126,12 @@
                             render.gridRefresh();
                         } else {
                             toastr.error("Fail: " + responce.message);
-                            console.log("Fail: " + responce.message)
+                            console.log("Fail: " + responce.message);
                         }
                     },
                     fail: function () {
-                        console.log("Failed ajax query....")
-                        toastr.error("Failed ajax query....");
+                        console.log("Failed removeMapMarkers query....");
+                        toastr.error("Failed removeMapMarkers query....");
                     }
                 });
             },
@@ -132,6 +157,19 @@
                     }
                 });
             },
+            getRoute: () => {
+                ajax.json({
+                    url: urlTeamMapGetRoute,
+                    data: modelMarkers,
+                    success: (response) => {
+                        console.log(response);
+                    },
+                    fail: function (msg) {
+                        console.log("Failed ajax query.... " + msg);
+                        toastr.error("Failed ajax query.... " + msg);
+                    }
+                });
+            },
         };
         var helper = {
             initIconsDropDownList: function () {
@@ -149,14 +187,33 @@
                 grid = $("#routeTable").kendoGrid(
                     {
                         sortable: true,
-                        dataSource: modelMarkers,
+                        dataSource: {
+                            data: modelMarkers,
+                            sort: { field: "index", dir: "asc" }
+                        },
                         columns: [
-                            { field: "index" },
-                            { field: "address" },
-                            { field: "markerType" },
-                            { field: "lat" },
-                            { field: "lng" },
+                            { field: "index", title: "№", width: "50px" },
+                            {
+                                field: "markerType", title: "Point type", width: "90px" ,
+                                template: function (dataItem) {
+                                    switch (dataItem.markerType) {
+                                        case 1:
+                                            return "<strong>Start</strong>";
+                                            break;
+                                        case 2:
+                                            return "<strong>End</strong>";
+                                            break;
+                                        default:
+                                            return dataItem.index;
+                                    }
+                                },
+                            },
+                            { field: "address", title: "Address" },
+                            { field: "lat", title: "Lat"  },
+                            { field: "lng", title: "Lng" },
+                            { command: { text: "Remove", click: helper.removeMarker }, title: " ", width: "100px"}
                         ],
+                        sort: { field: "index", dir: "desc" }
                     }
                 ).data("kendoGrid");
 
@@ -167,7 +224,7 @@
                 //        return item;
                 //    },
 
-                //});   
+                //});
 
                 grid.table.kendoSortable({
                     filter: ">tbody >tr",
@@ -180,7 +237,7 @@
                     change: function (e) {
                         var oldIndex = grid.dataSource.getByUid(e.item.data("uid")).index,
                             newIndex = grid.dataSource.data()[e.newIndex].index;
-                        helper.changeMarkerPosition(oldIndex, newIndex)
+                        helper.modelMarkers.changeMarkerPosition(oldIndex, newIndex)
                     }
                 });
             },
@@ -248,62 +305,82 @@
                         lable = markerIndex.toString();
                 return lable;
             },
-            getFreeMarkerIndex: function (markerType) {               
-                switch (markerType) {
-                    case 1: // markerType = Start Point
-                      //  if (modelMarkers.find(x => x.markerType == 1)) 
-                     //   {
+            removeMarker: (e) => {
+                var ww = e.currentTarget;
+                var dataItem = grid.dataItem($(e.currentTarget).closest("tr"));
+                actions.removeMarker(dataItem.markerId);
+            },
+            modelMarkers: {
+                getFreeMarkerIndex: function (markerType) {
+                    switch (markerType) {
+                        case 1: // markerType = Start Point
+                            //  if (modelMarkers.find(x => x.markerType == 1))
+                            //   {
                             // NEED exempt FOR OLD START POINT
-                    /*       
-                            modelMarkers.forEach((marker) => {
-                                marker.index ++;
-                                if  (marker.markerType == 1)
-                                    marker.markerType = 0;
-                              //  if  (marker.index != 10)  
-                              //      marker.label.text = marker.index;
-                            });*/
+                            /*
+                                    modelMarkers.forEach((marker) => {
+                                        marker.index ++;
+                                        if  (marker.markerType == 1)
+                                            marker.markerType = 0;
+                                      //  if  (marker.index != 10)
+                                      //      marker.label.text = marker.index;
+                                    });*/
 
-                           //  actions.updateMapMarkers(modelMarkers);
-                       // }
-                        $("#markerType").val(0);
-                        return 0;
-                        break;
-                    case 2: // markerType = End Point
-                        // NEED CHECK FOR OLD END POINT
-                        return 10;
-                        break;
-                    default: // markerType = Way Point
-                        for (var i = 1; i < 10; i++) {
-                            if (!modelMarkers.find(x => x.index == i)) {
-                                return i;
+                            //  actions.updateMapMarkers(modelMarkers);
+                            // }
+                            $("#markerType").val(0);
+                            return 0;
+                            break;
+                        case 2: // markerType = End Point
+                            // NEED CHECK FOR OLD END POINT
+                            return 10;
+                            break;
+                        default: // markerType = Way Point
+                            for (var i = 1; i < 10; i++) {
+                                if (!modelMarkers.find(x => x.index == i)) {
+                                    return i;
+                                }
                             }
+                            return 1; // default first way point index
+                            break;
+                    }
+
+                },
+                changeMarkerPosition: (oldIndex, newIndex) => {
+                    var positionToInsert = modelMarkers.indexOf(modelMarkers.find(x => x.index == newIndex))
+                    var item = modelMarkers.find(x => x.index == oldIndex);
+
+                    modelMarkers = modelMarkers.filter(x => x.index != oldIndex);
+                    modelMarkers.forEach((curr) => {
+                        if (curr.index > oldIndex) {
+                            curr.index--;
                         }
-                        return 1; // default first way point index
-                        break;
-                }
+                    });
+                    modelMarkers.forEach((curr) => {
+                        if (curr.index >= newIndex) {
+                            curr.index++;
+                        }
+                    });
 
+                    item.index = newIndex;
+                    modelMarkers.splice(positionToInsert, 0, item);
+
+                    render.gridRefresh();
+                    actions.updateMapMarkers(modelMarkers);
+                },
+                removeMarker: (markerId) => {
+                    let removeMarkerIndex = modelMarkers.find(x => x.markerId == markerId).index;
+                    modelMarkers = modelMarkers.filter(x => x.markerId != markerId);
+                    modelMarkers.forEach((marker) => {
+                        if (marker.index > removeMarkerIndex) {
+                            marker.index--;
+                        }
+                    });
+                    render.gridRefresh();
+                    actions.updateMapMarkers(modelMarkers);
+                },
             },
-            changeMarkerPosition: (oldIndex, newIndex) => {
-                var positionToInsert = modelMarkers.indexOf(modelMarkers.find(x => x.index == newIndex))
-                var item = modelMarkers.find(x => x.index == oldIndex);
- 
-                modelMarkers = modelMarkers.filter(x => x.index != oldIndex);
-                modelMarkers.forEach((curr) => {
-                    if (curr.index > oldIndex) {
-                        curr.index--;
-                    }
-                });
-                modelMarkers.forEach((curr) => {
-                    if (curr.index >= newIndex) {
-                        curr.index++;
-                    }
-                });
 
-                item.index = newIndex;
-                modelMarkers.splice(positionToInsert, 0, item);
-
-                render.gridRefresh();
-            },
         },
         render = {
             renderMarkersFromModel: () => {
@@ -322,7 +399,7 @@
             cleanMapMarkers: () => { //  Removes the markers from the map
                 render.setMapOnAll(null);
             },
-            setMapMarkers: () => { 
+            setMapMarkers: () => {
                 render.setMapOnAll(map);
                 },
             setMapOnAll: (map) => { // Sets the map on all markers in the array.
@@ -342,10 +419,10 @@
             google.maps.event.addListener(map, 'click', function (event) {
                  let markerType = parseInt($("#markerType").val());
                 //helper.addMarker(
-                //    event.latLng, 
-                //    map, 
+                //    event.latLng,
+                //    map,
                 //    $('#colorSelect').data('kendoDropDownList').value(),
-                //    helper.getMarkerLable(helper.getFreeMarkerIndex(markerType), parseInt($("#markerType").val()))
+                //    helper.getMarkerLable(helper.modelMarkers.getFreeMarkerIndex(markerType), parseInt($("#markerType").val()))
                 //);
                 actions.addMapMarker(
                     {
@@ -353,13 +430,13 @@
                         Lng: event.latLng.lng(),
                         MarkerIconId: $('#colorSelect').data('kendoDropDownList').dataItem().markerIconId,
                         MarkerType: markerType,
-                        Index: helper.getFreeMarkerIndex(markerType)
-                    }                  
+                        Index: helper.modelMarkers.getFreeMarkerIndex(markerType)
+                    }
                 )
             });
 
             $('#deleteMarkers').click(actions.removeMapMarkers);
-
+            $("#buildRoute").click(actions.getRoute);
         }
 
 
@@ -376,7 +453,7 @@
             helper.initGoogleMap();
             //setModelMarkers();
             helper.initIconsDropDownList();
-            
+
                 registerEventHandlers();
             }
 
