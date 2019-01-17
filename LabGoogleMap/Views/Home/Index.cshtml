@@ -39,8 +39,8 @@
 
 @section scripts
     {
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk" defer></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk&libraries=geometry"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk&libraries=geometry" defer></script>
+    @*<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk&libraries=geometry"></script>*@
     <script defer>
         //require(["jquery", "kendogrids", "ajax", "toastr"], function ($, kendoGrid, ajax, toastr) {
 
@@ -52,6 +52,7 @@
         var urlTeamMapGetRoute = "@Url.Action("GetGoogleRoute")";
         var colorDataSource =  @Html.Raw(Json.Serialize(Model.MarkerIcons.ToArray()));
         var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray())); //Json.Encode(Model.Markers.ToArray());
+        var modelLegs = [];
 
         var needUpdateAllIndex = false;
 
@@ -60,6 +61,7 @@
         var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         var markerIconUrl = "http://maps.google.com/mapfiles/kml/paddle/blu-circle.png";
         var markers = [];
+        var polylines = [];
 
             // Actions
         var actions = {
@@ -161,12 +163,21 @@
                 ajax.json({
                     url: urlTeamMapGetRoute,
                     data: modelMarkers,
-                    success: (response) => {
-                        console.log(response);
+                    success: (responce) => {
+                        if (responce.success) {
+                            toastr.success("Updated route!");
+                            modelLegs = responce.legs;
+                            render.renderPolylines(modelLegs);
+                            //  helper.addMarker(responce.markers);
+                            console.log("Updated route!");
+                        } else {
+                            toastr.error("Fail route: " + responce.message);
+                            console.log("Fail route: " + responce.message);
+                        }
                     },
                     fail: function (msg) {
-                        console.log("Failed ajax query.... " + msg);
-                        toastr.error("Failed ajax query.... " + msg);
+                        console.log("Failed route query.... " + msg);
+                        toastr.error("Failed route query.... " + msg);
                     }
                 });
             },
@@ -391,6 +402,19 @@
                 });
 
                 render.gridRefresh();
+            },
+            renderPolylines: (legs) => {
+
+                polylines = [];
+
+                legs.forEach((leg) => {
+                    var polyline = new google.maps.Polyline({
+                        path: google.maps.geometry.encoding.decodePath(leg.polyline),
+                        map: map
+                    });
+                    polylines.push(polyline);
+                });
+
             },
             updateMapMarkers: () => {
                 render.cleanMapMarkers();

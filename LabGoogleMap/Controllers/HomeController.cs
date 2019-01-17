@@ -21,12 +21,14 @@ namespace LabGoogleMap.Controllers {
         //private readonly MapService mapService;
         private readonly IMarkerService markerService;
         private readonly IMarkerIconService markerIconService;
+        private readonly IRouteLegService routeLegService;
 
         const int CustomerID = 1;
 
-        public HomeController (IMarkerService markerService, IMarkerIconService markerIconService) {
+        public HomeController (IMarkerService markerService, IMarkerIconService markerIconService, IRouteLegService routeLegService) {
             this.markerService = markerService;
             this.markerIconService = markerIconService;
+            this.routeLegService = routeLegService;
         }
 
         public IActionResult Index () {
@@ -73,59 +75,17 @@ namespace LabGoogleMap.Controllers {
         [HttpPost]
         public IActionResult GetGoogleRoute([FromBody] Marker[] markers)
         {
-            string origin = "", destination = "", wayPoints = "";
-            //List<string> wayPoints = new List<string>();
-
-            foreach (Marker marker in markers)
+            if (markers.Count() > 1)
             {
-                switch (marker.MarkerType)
-                {
-                    case MarkerType.WayPoint:
-                        if (string.IsNullOrEmpty(wayPoints))
-                        {
-                            wayPoints += $"waypoints=via:{marker.Lat},{marker.Lng}";
-                        } else
-                        {
-                            wayPoints += $"|via:{marker.Lat},{marker.Lng}";
-                        }
-                        break;
-                    case MarkerType.StartPoint:
-                        origin = $"origin={marker.Lat},{marker.Lng}";
-                        break;
-                    case MarkerType.EndPoint:
-                        destination = $"destination={marker.Lat},{marker.Lng}";
-                        break;
-                }
+                var responce = routeLegService.GetRouteLegs(markers);
+
+                return Json(new { success = true, legs = responce });
             }
-
-            string key = @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
-            string url = @"https://maps.googleapis.com/maps/api/directions/json?" + origin + 
-                "&" + destination +
-                "&" + wayPoints +
-                "&key=" + key;
-
-            WebRequest request = WebRequest.Create(url);
-            request.ContentType = "application/json; charset=utf-8";
-            request.Method = WebRequestMethods.Http.Get;
-
-            WebResponse response = request.GetResponse();
-            Stream data = response.GetResponseStream();
-            StreamReader reader = new StreamReader(data);
-            // json-formatted string from maps api
-            string responseFromServer = reader.ReadToEnd();
-            reader.Close();
-            data.Close();
-            response.Close();
-
-            JObject jObj = JObject.Parse(responseFromServer);
-
-            JToken jRoute = jObj["routes"].FirstOrDefault();
-
-            string polyline = jRoute.SelectToken("overview_polyline").SelectToken("points").ToString();
-
-            //string address = jObj["results"].FirstOrDefault().SelectToken("formatted_address").ToString();
-
-            return Json(url);
+            return Json(new
+            {
+                success = false,
+                msg = "To build a route must be at least 2 points"
+            });
         }
 
 
@@ -216,3 +176,79 @@ namespace LabGoogleMap.Controllers {
 
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//[HttpPost]
+//public IActionResult GetGoogleRoute([FromBody] Marker[] markers)
+//{
+//    string origin = "", destination = "", wayPoints = "";
+//    //List<string> wayPoints = new List<string>();
+
+//    foreach (Marker marker in markers)
+//    {
+//        switch (marker.MarkerType)
+//        {
+//            case MarkerType.WayPoint:
+//                if (string.IsNullOrEmpty(wayPoints))
+//                {
+//                    wayPoints += $"waypoints=via:{marker.Lat},{marker.Lng}";
+//                }
+//                else
+//                {
+//                    wayPoints += $"|via:{marker.Lat},{marker.Lng}";
+//                }
+//                break;
+//            case MarkerType.StartPoint:
+//                origin = $"origin={marker.Lat},{marker.Lng}";
+//                break;
+//            case MarkerType.EndPoint:
+//                destination = $"destination={marker.Lat},{marker.Lng}";
+//                break;
+//        }
+//    }
+
+//    string key = @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
+//    string url = @"https://maps.googleapis.com/maps/api/directions/json?" + origin +
+//        "&" + destination +
+//        "&" + wayPoints +
+//        "&key=" + key;
+
+//    WebRequest request = WebRequest.Create(url);
+//    request.ContentType = "application/json; charset=utf-8";
+//    request.Method = WebRequestMethods.Http.Get;
+
+//    WebResponse response = request.GetResponse();
+//    Stream data = response.GetResponseStream();
+//    StreamReader reader = new StreamReader(data);
+//    // json-formatted string from maps api
+//    string responseFromServer = reader.ReadToEnd();
+//    reader.Close();
+//    data.Close();
+//    response.Close();
+
+//    JObject jObj = JObject.Parse(responseFromServer);
+
+//    JToken jRoute = jObj["routes"].FirstOrDefault();
+
+//    string polyline = jRoute.SelectToken("overview_polyline").SelectToken("points").ToString();
+
+//    //string address = jObj["results"].FirstOrDefault().SelectToken("formatted_address").ToString();
+
+//    return Json(url);
+//}

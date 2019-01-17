@@ -13,6 +13,7 @@ namespace Domain
 
         public DbSet<Marker> Markers { get; set; }
         public DbSet<MarkerIcon> MarkerIcons { get; set; }
+        public DbSet<RouteLeg> RouteLegs { get; set; }
 
 
 

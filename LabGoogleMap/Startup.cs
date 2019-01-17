@@ -51,11 +51,11 @@ namespace LabGoogleMap
 
             services.AddTransient<IMarkerRepository, MarkerRepository>();
             services.AddTransient<IMarkerIconRepository, MarkerIconRepository>();
+            services.AddTransient<IRouteLegRepository, RouteLegRepository>();
 
             services.AddTransient<IMarkerService, MarkerService>();
             services.AddTransient<IMarkerIconService, MarkerIconService>();
-
-
+            services.AddTransient<IRouteLegService, RouteLegService>();
 
 
         }
