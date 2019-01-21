@@ -13,9 +13,12 @@ namespace Service {
         void RemoveMarkers (int customerID);
         bool CanAddMarker(int customerID);
         IEnumerable<Marker> AddMarkerWithIndexUpdate (Marker marker);
+        IEnumerable<Marker> UpdateMarkers(IEnumerable<Marker> markers);
+        IEnumerable<Marker> MarkersBeforeRouteWork(IEnumerable<Marker> markers);
     }
 
-    public class MarkerService : IMarkerService {
+    public class MarkerService : IMarkerService
+    {
         //private LabContext db;
         private readonly IMarkerRepository markerRepository;
 
@@ -132,7 +135,7 @@ namespace Service {
         {
             int currIndex = 1;
 
-            foreach (var item in markers.OrderBy(x => x.Index))
+            foreach (var item in markers.Where(x => x.MarkerType == MarkerType.WayPoint).OrderBy(x => x.Index))
             {
                 item.Index = currIndex;
                 currIndex++;
@@ -140,5 +143,31 @@ namespace Service {
 
             return markers;
         }
+
+
+        public static IEnumerable<Marker> MarkersWaypointsReOrder(IEnumerable<Marker> markers, List<int> newWaypointOrder)
+        {
+
+            var result = new List<Marker>();
+            result.Add(markers.FirstOrDefault(x => x.MarkerType == MarkerType.StartPoint));
+
+            var wayPointsMarkers = markers.Where(x => x.MarkerType == MarkerType.WayPoint).ToList();
+
+            if (wayPointsMarkers.Count() == newWaypointOrder.Count())
+            {
+                for (int i = 0; i < wayPointsMarkers.Count(); i++)
+                {
+                    wayPointsMarkers[i].Index = 1 + newWaypointOrder[i];
+                }
+                result.AddRange(wayPointsMarkers.OrderBy(x => x.Index));
+            }
+            else
+                throw new Exception("Error reordering way-points.");
+
+            result.Add(markers.FirstOrDefault(x => x.MarkerType == MarkerType.EndPoint));
+            return result;
+
+        }
+
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 
 namespace Domain.Entities
@@ -21,8 +22,11 @@ namespace Domain.Entities
 
     public enum MarkerType
     {
+        [Description("Way Point")]
         WayPoint ,
+        [Description("Start Point")]
         StartPoint ,
+        [Description("End Point")]
         EndPoint 
     }
 }

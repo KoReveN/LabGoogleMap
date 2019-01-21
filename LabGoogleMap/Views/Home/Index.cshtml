@@ -1,7 +1,20 @@
 ﻿@model MapViewModel
+@using LabGoogleMap.Helpers
+@using Service.RequestModels
 @{
     //  ViewData["Title"] = "Home Page";
     ViewBag.Title = "Google map";
+
+
+    var trafficModelDataSource = EnumHelper.GetEnumDataSource(TrafficModel.best_guess).ToList();
+    var markerTypeDataSource = EnumHelper.GetEnumDataSource(Domain.Entities.MarkerType.EndPoint).ToList();
+
+
+
+    // var ss = Enum.GetNames(typeof(TrafficModel));
+
+    // var qq = Enum.GetValues(typeof(TrafficModel));
+    //  var sss = "";
 }
 
 
@@ -9,22 +22,27 @@
 
 <div class="space-10"></div>
 
-<div class="row">Please select color of marker:</div>
+
 
 <div id="test1"></div>
 
 <div>
     Current marker:
-    @*@Html.GetEnumSelectList(typeof(Domain.Entities.MarkerType))*@
-
-    <select id="markerType" asp-items="@Html.GetEnumSelectList(typeof(Domain.Entities.MarkerType))"></select>
+    @*<select id="markerType" asp-items="@Html.GetEnumSelectList(typeof(Domain.Entities.MarkerType))"></select>*@
+    <div id="markerType"></div>
+    <div id="colorSelect"></div>
 </div>
 
 <div class="space-20"></div>
 <div class="row">
-    <div id="colorSelect"></div>
-    <input id="deleteMarkers" type=button value="Delete Markers">
-    <input id="buildRoute" type=button value="Build route">
+
+    <input id="deleteMarkers" class="btn btn-danger margin-5" type=button value="Delete all markers">
+    <input id="buildRoute" class="btn btn-primary margin-5" type=button value="Build route">
+
+    <div class="right">
+        <div id="routeOptionSelect" class="margin-5"></div>
+        <input id="btn-optimalRoute" class="btn margin-5" type=button value="Optimal route">
+    </div>
 </div>
 
 <div class="space-20"></div>
@@ -45,20 +63,27 @@
         //require(["jquery", "kendogrids", "ajax", "toastr"], function ($, kendoGrid, ajax, toastr) {
 
         // Settings
-        var urlTeamMapMarkerAdd = "@Url.Action("TeamMapMarkerAdd")";
-        var urlTeamMapMarkersRemove = "@Url.Action("TeamMapMarkersRemove")";
-        var urlTeamMapMarkerRemove = "@Url.Action("TeamMapMarkerRemove")";
-        var urlTeamMapMarkersUpdate = "@Url.Action("TeamMapMarkersUpdate")";
-        var urlTeamMapGetRoute = "@Url.Action("GetGoogleRoute")";
+        var urlMapMarkerAdd = "@Url.Action("MapMarkerAdd")";
+        var urlMapMarkersRemove = "@Url.Action("MapMarkersRemove")";
+        var urlMapMarkerRemove = "@Url.Action("MapMarkerRemove")";
+        var urlMapMarkersUpdate = "@Url.Action("MapMarkersUpdate")";
+        var urlMapGetSimpleRoute = "@Url.Action("GetGoogleSimpleRoute")";
+        var urlMapGetOptimalRoute = "@Url.Action("GetGoogleOptimalRoute")";
         var colorDataSource =  @Html.Raw(Json.Serialize(Model.MarkerIcons.ToArray()));
-        var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray())); //Json.Encode(Model.Markers.ToArray());
+        //   var routeOptionsDataSource = ["Pissimistic", "Best guess", "Optimistic"];
+
+        var routeOptionsDataSource = @Html.Raw(Json.Serialize(trafficModelDataSource));
+        var markerTypeDataSource = @Html.Raw(Json.Serialize(markerTypeDataSource));
+
+        var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray())); 
         var modelLegs = [];
 
         var needUpdateAllIndex = false;
+        var useSimpleRoute = true;
+
 
         var grid;
         var map;
-        var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         var markerIconUrl = "http://maps.google.com/mapfiles/kml/paddle/blu-circle.png";
         var markers = [];
         var polylines = [];
@@ -67,7 +92,7 @@
         var actions = {
             addMapMarker: function (data) {
                 ajax.json({
-                    url: urlTeamMapMarkerAdd,
+                    url: urlMapMarkerAdd,
                     data: data,
                     success: function (responce) {
                         if (responce.success) {
@@ -83,6 +108,7 @@
                                 modelMarkers.push(responce.markers[0]);
                                 render.gridRefresh();
                             }
+                            helper.updateRoute();
                         } else {
                             toastr.error("Fail addMapMarker: " + responce.message);
                             console.log("Fail addMapMarker: " + responce.message);
@@ -96,13 +122,14 @@
             },
             removeMarker: function (markerId) {
                 ajax.json({
-                    url: urlTeamMapMarkerRemove,
+                    url: urlMapMarkerRemove,
                     data: markerId,
                     success: function (responce) {
                         if (responce.success) {
                             toastr.success("Marker deleted!");
                             console.log("Marker deleted!");
                             helper.modelMarkers.removeMarker(markerId);
+                            helper.updateRoute();
                         } else {
                             toastr.error("Fail removeMarker: " + responce.message);
                             console.log("Fail removeMarker: " + responce.message);
@@ -116,7 +143,7 @@
             },
             removeMapMarkers: function (lat, lng, color) {
                 ajax.json({
-                    url: urlTeamMapMarkersRemove,
+                    url: urlMapMarkersRemove,
                     success: function (responce) {
                         if (responce.success) {
                             toastr.success("Markers was deleted!");
@@ -125,6 +152,7 @@
                             render.cleanMapMarkers();
                             markers = [];
                             modelMarkers = [];
+                            render.clearPolylines();
                             render.gridRefresh();
                         } else {
                             toastr.error("Fail: " + responce.message);
@@ -139,7 +167,7 @@
             },
             updateMapMarkers: function(data) {
                 ajax.json({
-                    url: urlTeamMapMarkersUpdate,
+                    url: urlMapMarkersUpdate,
                     data: data,
                     success: function (responce) {
                         if (responce.success) {
@@ -148,6 +176,7 @@
                             render.renderMarkersFromModel();
                           //  helper.addMarker(responce.markers);
                             console.log("Updated markers!");
+                            useSimpleRoute ? helper.updateRoute() : render.clearPolylines();       
                         } else {
                             toastr.error("Fail: " + responce.message);
                             console.log("Fail: " + responce.message);
@@ -160,14 +189,16 @@
                 });
             },
             getRoute: () => {
+                useSimpleRoute = true;
                 ajax.json({
-                    url: urlTeamMapGetRoute,
+                    url: urlMapGetSimpleRoute,
                     data: modelMarkers,
                     success: (responce) => {
                         if (responce.success) {
                             toastr.success("Updated route!");
                             modelLegs = responce.legs;
                             render.renderPolylines(modelLegs);
+                            render.gridRefresh();
                             //  helper.addMarker(responce.markers);
                             console.log("Updated route!");
                         } else {
@@ -181,7 +212,41 @@
                     }
                 });
             },
+            getOptimalRoute: () => {
+                useSimpleRoute = false;
+                var optimalRouteOption = $("#routeOptionSelect").val();
+                ajax.json({
+                    url: urlMapGetOptimalRoute,
+                    data: {
+                        markers: modelMarkers,
+                        optimalRouteOption
+                    },
+                    success: (responce) => {
+                        if (responce.success) {
+                            toastr.success("Updated OptimalRoute!");
+                            modelLegs = [];
+                            modelMarkers = responce.otimizedRoute.markers;
+                            render.renderMarkersFromModel();
+                            modelLegs.push(responce.otimizedRoute.leg);
+                            render.renderPolylines(modelLegs);
+
+                            //modelLegs = responce.legs;
+                            //render.renderPolylines(modelLegs);
+                            //render.gridRefresh();
+                            console.log("Updated OptimalRoute!");
+                        } else {
+                            toastr.error("Fail OptimalRoute: " + responce.message);
+                            console.log("Fail OptimalRoute: " + responce.message);
+                        }
+                    },
+                    fail: function (msg) {
+                        console.log("Failed OptimalRoute query.... " + msg);
+                        toastr.error("Failed OptimalRoute query.... " + msg);
+                    }
+                });
+            },
         };
+
         var helper = {
             initIconsDropDownList: function () {
                 $('#colorSelect').kendoDropDownList(
@@ -192,6 +257,22 @@
                         change: function (e) {
                             // markerIconUrl = this.value();
                         }
+                    });
+            },
+            initMarkerTypeDropDownList: function () {
+                $('#markerType').kendoDropDownList(
+                    {
+                        dataSource: markerTypeDataSource,
+                        dataTextField: "value",
+                        dataValueField: "key",
+                    });
+            },             
+            initRouteOptionsDropDownList: function () {
+                $('#routeOptionSelect').kendoDropDownList(
+                    {
+                        dataSource: routeOptionsDataSource,
+                        dataTextField: "value",
+                        dataValueField: "key",
                     });
             },
             initRouteTable: () => {
@@ -219,9 +300,32 @@
                                     }
                                 },
                             },
-                            { field: "address", title: "Address" },
-                            { field: "lat", title: "Lat"  },
-                            { field: "lng", title: "Lng" },
+                            { field: "address", title: "Address", width: "350px" },
+                            { field: "lat", title: "Lat", width: "100px" },
+                            { field: "lng", title: "Lng", width: "100px" },
+                            { field: "markerId", title: "Distance",
+                                template: (marker) => {
+                                    if (modelLegs.length > 0) {
+                                        var leg = modelLegs.find(x => x.startPoint == marker.markerId);
+                                        if (leg != null) {
+                                            return render.formatDistance(leg.distance);
+                                        }
+                                    }
+                                    return "";
+                                }
+                            },
+                            {
+                                field: "markerId", title: "Duration",
+                                template: (marker) => {
+                                    if (modelLegs.length > 0) {
+                                        var leg = modelLegs.find(x => x.startPoint == marker.markerId);
+                                        if (leg != null) {
+                                            return render.formatDuration(leg.duration);
+                                        }
+                                    }
+                                    return "";
+                                }
+                            },
                             { command: { text: "Remove", click: helper.removeMarker }, title: " ", width: "100px"}
                         ],
                         sort: { field: "index", dir: "desc" }
@@ -339,7 +443,8 @@
 
                             //  actions.updateMapMarkers(modelMarkers);
                             // }
-                            $("#markerType").val(0);
+                            var dropdownlist = $("#markerType").data("kendoDropDownList");
+                            dropdownlist.select(0);
                             return 0;
                             break;
                         case 2: // markerType = End Point
@@ -391,6 +496,11 @@
                     actions.updateMapMarkers(modelMarkers);
                 },
             },
+            updateRoute: () => {
+                if (polylines.length > 0) {
+                    useSimpleRoute ? actions.getRoute() : actions.getOptimalRoute();
+                }
+            },
 
         },
         render = {
@@ -405,7 +515,7 @@
             },
             renderPolylines: (legs) => {
 
-                polylines = [];
+                render.clearPolylines();
 
                 legs.forEach((leg) => {
                     var polyline = new google.maps.Polyline({
@@ -415,6 +525,13 @@
                     polylines.push(polyline);
                 });
 
+            },
+            clearPolylines: () => {
+                polylines.forEach((poly) => {
+                    poly.setMap(null);
+                });
+
+                polylines = [];
             },
             updateMapMarkers: () => {
                 render.cleanMapMarkers();
@@ -433,6 +550,29 @@
             },
             gridRefresh: () => {
                 grid.dataSource.data(modelMarkers);
+            },
+            formatDistance: (distance) => {
+                return (distance / 1000).toFixed(2) + " km"
+            },
+            formatDuration: (duration) => {
+                //var date = new Date(null);
+                //date.setSeconds(duration; // specify value for SECONDS here
+                //var timeString = date.toISOString().substr(11, 8);
+
+                var date = new Date(duration * 1000);
+                var hh = date.getUTCHours();
+                var mm = date.getUTCMinutes();
+                var ss = date.getSeconds();
+
+                //if (hh < 10) { hh = "0" + hh; }
+                //if (mm < 10) { mm = "0" + mm; }
+
+                // This formats your string to HH:MM:SS
+                //var t = hh + ":" + mm + ":" + ss;
+
+                if (ss > 30) mm++;
+                if (hh > 0) return hh + " h " + mm + " min";
+                return mm + " min"
             },
         }
 
@@ -461,6 +601,7 @@
 
             $('#deleteMarkers').click(actions.removeMapMarkers);
             $("#buildRoute").click(actions.getRoute);
+            $("#btn-optimalRoute").click(actions.getOptimalRoute)
         }
 
 
@@ -477,6 +618,8 @@
             helper.initGoogleMap();
             //setModelMarkers();
             helper.initIconsDropDownList();
+            helper.initMarkerTypeDropDownList();
+            helper.initRouteOptionsDropDownList();
 
                 registerEventHandlers();
             }
@@ -509,50 +652,33 @@
     .space-20 {
         height: 20px;
     }
+
+    .margin-5 {
+        margin: 5px;
+    }
+
+    #btn-optimalRoute {
+        /*width: 200px;*/
+        /* text-align: right; */
+        /* float: right; */
+        background-color: #d76161;
+        /*box-shadow: 0px 3px 20px 2px black;*/
+    }
+
+    div#map {
+        box-shadow: 0 0 20px 0px black;
+    }
+
+    .right {
+        margin-left: auto;
+    }
 </style>
 
 
-@{
-    //  (синий, красный, зеленый, фиолетовый и белый).
-    //var colorDataSource = [
-    //    //{ "Name": "Blue", "Value": "#5D85FD" },
-    //    //{ "Name": "Red", "Value": "#FC6356" },
-    //    //{ "Name": "Green", "Value": "#59FC7D" },
-    //    //{ "Name": "Purple", "Value": "#825AFD" },
-    //    //{ "Name": "White", "Value": "#FFFFFF" },
-
-    //    //{ "Name": "Blue", "Value": "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" },
-    //    //{ "Name": "Red", "Value": "http://maps.google.com/mapfiles/ms/icons/red-dot.png" },
-    //    //{ "Name": "Green", "Value": "http://maps.google.com/mapfiles/ms/icons/green-dot.png" },
-    //    //{ "Name": "Purple", "Value": "http://maps.google.com/mapfiles/ms/icons/purple-dot.png" },
-
-    //    { "Name": "Blue", "Value": "http://maps.google.com/mapfiles/kml/paddle/blu-blank.png" },
-    //    { "Name": "Red", "Value": "http://maps.google.com/mapfiles/kml/paddle/red-blank.png" },
-    //    { "Name": "Green", "Value": "http://maps.google.com/mapfiles/kml/paddle/grn-blank.png" },
-    //    { "Name": "Purple", "Value": "http://maps.google.com/mapfiles/kml/paddle/purple-blank.png" },
-    //    { "Name": "White", "Value": "http://maps.google.com/mapfiles/kml/paddle/wht-blank.png" }
-    //];
-}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="text-center">
+@*<div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+</div>*@

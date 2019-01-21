@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Service;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Service.RequestModels;
 
 namespace LabGoogleMap.Controllers {
 
@@ -42,7 +43,7 @@ namespace LabGoogleMap.Controllers {
         }
 
         [HttpPost]
-        public IActionResult TeamMapMarkerAdd ([FromBody] Marker marker) {
+        public IActionResult MapMarkerAdd ([FromBody] Marker marker) {
             try {
 
                 if (!markerService.CanAddMarker(CustomerID)) {
@@ -73,10 +74,13 @@ namespace LabGoogleMap.Controllers {
 
 
         [HttpPost]
-        public IActionResult GetGoogleRoute([FromBody] Marker[] markers)
+        public IActionResult GetGoogleSimpleRoute([FromBody] Marker[] markers_)
         {
-            if (markers.Count() > 1)
+            if (markers_.Count() > 1)
             {
+                var markers = markerService.MarkersBeforeRouteWork(markers_).ToArray();
+                markerService.UpdateMarkers(markers);
+
                 var responce = routeLegService.GetRouteLegs(markers);
 
                 return Json(new { success = true, legs = responce });
@@ -86,6 +90,39 @@ namespace LabGoogleMap.Controllers {
                 success = false,
                 msg = "To build a route must be at least 2 points"
             });
+        }
+
+        [HttpPost]
+        public IActionResult GetGoogleOptimalRoute([FromBody] MapOptimalRouteRequest optimalRouteRequest)
+        {
+            if (optimalRouteRequest.Markers.Count() > 1)
+            {
+                if (optimalRouteRequest.Markers.Count() < 11)
+                {
+                     var markers = markerService.MarkersBeforeRouteWork(optimalRouteRequest.Markers);
+                    optimalRouteRequest.Markers = markers;
+                    var response = routeLegService.GetGoogleOptimalRoute(optimalRouteRequest);
+                    markerService.UpdateMarkers(response.Markers);
+                    return Json(new { success = true, otimizedRoute = response });
+
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        msg = "Maximum number of route points - 10. You can not build a route."
+                    });
+                }
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "To build a route must be at least 2 points"
+                });
+            }
         }
 
 
@@ -117,7 +154,7 @@ namespace LabGoogleMap.Controllers {
         }
 
         [HttpPost]
-        public IActionResult TeamMapMarkerRemove([FromBody] int markerId)
+        public IActionResult MapMarkerRemove([FromBody] int markerId)
         {
             try
             {
@@ -141,7 +178,7 @@ namespace LabGoogleMap.Controllers {
         }
 
         [HttpPost]
-        public JsonNetResult TeamMapMarkersRemove () {
+        public JsonNetResult MapMarkersRemove() {
             try {
                 var customerID = CustomerID;
 
@@ -159,16 +196,13 @@ namespace LabGoogleMap.Controllers {
         }
 
         [HttpPost]
-        public IActionResult TeamMapMarkersUpdate ([FromBody] Marker[] markers) {
+        public IActionResult MapMarkersUpdate ([FromBody] Marker[] markers) {
 
-            // foreach (var item in markers)
-            // {
-            //     item.Index = 5;
-            // }
+            var response = markerService.UpdateMarkers(markers);
 
             return Json (new {
                 success = true,
-                    markers
+                markers = response
             });
         }
 
