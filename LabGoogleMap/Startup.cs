@@ -45,7 +45,8 @@ namespace LabGoogleMap
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            
+            services.AddSingleton<IConfigurationRoot>(Configuration);
+            //services.AddTransient<IConfiguration>(provider => Configuration);
             services.AddTransient<LabContext, LabContext>();
             services.AddTransient <IDbFactory, DbFactory> ();
 
@@ -73,6 +74,8 @@ namespace LabGoogleMap
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
+           // app.UseMiddleware<ConfigMiddleware>();
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
@@ -113,6 +116,23 @@ namespace LabGoogleMap
 
         }
     }
-    
 
+    public class ConfigMiddleware
+    {
+        private readonly RequestDelegate _next;
+
+        public ConfigMiddleware(RequestDelegate next, IConfiguration config)
+        {
+            _next = next;
+            AppConfiguration = config;
+        }
+        public IConfiguration AppConfiguration { get; set; }
+
+        public async Task Invoke(HttpContext context)
+        {
+            var color = AppConfiguration["color"];
+            var text = AppConfiguration["text"];
+            await context.Response.WriteAsync($"<p style='color:{color};'>{text}</p>");
+        }
+    }
 }

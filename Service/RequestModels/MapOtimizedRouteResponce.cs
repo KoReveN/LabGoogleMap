@@ -9,10 +9,13 @@ namespace Service.RequestModels
     {
 
         public IEnumerable<Marker> Markers { get; set; }
-        public RouteLeg Leg { get; set; }
+        public IEnumerable<RouteLeg> Legs { get; set; }
+        public string Polyline { get; set; }
+
         public MapOtimizedRouteResponce()
         {
             Markers = new List<Marker>();
+            Legs = new List<RouteLeg>();
         }
 
     }

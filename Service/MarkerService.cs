@@ -112,7 +112,7 @@ namespace Service {
             if (markers.Count() > 2)
                 SetWayPointCorrectIndexes(markers);
 
-                return markers;
+                return markers.OrderBy(x => x.Index);
         }
 
         private IEnumerable<Marker> SetStartPointMarker(IEnumerable<Marker> markers)
@@ -120,6 +120,7 @@ namespace Service {
             Marker startPoint = markers.Where(m => m.Index == markers.Min(x => x.Index)).FirstOrDefault();
             startPoint.Index = 0;
             startPoint.MarkerType = MarkerType.StartPoint;
+            startPoint.MarkerIconId = 5;
             return markers;
         }
 
@@ -128,6 +129,7 @@ namespace Service {
             Marker startPoint = markers.Where(m => m.Index == markers.Max(x => x.Index)).FirstOrDefault();
             startPoint.Index = 10;
             startPoint.MarkerType = MarkerType.EndPoint;
+            startPoint.MarkerIconId = 5;
             return markers;
         }
 
@@ -139,6 +141,11 @@ namespace Service {
             {
                 item.Index = currIndex;
                 currIndex++;
+            }
+
+            foreach (var item in markers.Where(x => x.MarkerType != MarkerType.WayPoint && x.MarkerIconId == 5))
+            {
+                item.MarkerIconId = 1;
             }
 
             return markers;

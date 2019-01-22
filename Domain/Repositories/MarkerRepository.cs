@@ -1,18 +1,17 @@
 ﻿using Domain.Entities;
 using Domain.Infrastracture;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace Domain.Repositories
 {
     public class MarkerRepository : RepositoryBase<Marker>, IMarkerRepository
     {
-        public MarkerRepository(IDbFactory dbFactory) : base(dbFactory)
-        {
-
-        }
+        public MarkerRepository(IDbFactory dbFactory) : base(dbFactory) {  }
 
         public int GetLastPointIndex(int customerId)
         {
@@ -25,6 +24,12 @@ namespace Domain.Repositories
             {
                return 0;
             }
+        }
+
+
+        public override IEnumerable<Marker> GetMany(Expression<Func<Marker, bool>> where)
+        {
+            return this.DbContext.Markers.Include(x => x.Point).Where(where).ToList();
         }
 
     }

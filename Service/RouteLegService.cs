@@ -9,6 +9,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Service.RequestModels;
+using Microsoft.Extensions.Configuration;
 
 namespace Service
 {
@@ -22,10 +23,12 @@ namespace Service
     public class RouteLegService : IRouteLegService
     {
         private readonly IRouteLegRepository routeLegRepository;
+        public IConfiguration AppConfiguration { get; set; }
 
-        public RouteLegService(IRouteLegRepository routeLegRepository)
+        public RouteLegService(IRouteLegRepository routeLegRepository, IConfiguration config)
         {
             this.routeLegRepository = routeLegRepository;
+            AppConfiguration = config;
         }
 
 
@@ -39,8 +42,8 @@ namespace Service
             for (int i = 0; i < markers.Count() -1; i++)
             {
                 RouteLeg leg = new RouteLeg() {
-                    StartPoint = markers[i].MarkerId,
-                    EndPoint = markers[i+1].MarkerId
+                    StartPoint = markers[i].PointId,
+                    EndPoint = markers[i+1].PointId
                 };
 
                 legsRequest.Add(leg);
@@ -62,8 +65,8 @@ namespace Service
                 if (legFill == null)
                 {
                     // Google api request for new leg
-                    RouteLeg newLeg = GetLegByGoogleApi(markers.FirstOrDefault(m => m.MarkerId == leg.StartPoint),
-                                                        markers.FirstOrDefault(m => m.MarkerId == leg.EndPoint));
+                    RouteLeg newLeg = GetLegByGoogleApi(markers.FirstOrDefault(m => m.PointId == leg.StartPoint),
+                                                        markers.FirstOrDefault(m => m.PointId == leg.EndPoint));
                     legsResponce.Add(newLeg);
                     routeLegRepository.Add(newLeg);
                     
@@ -84,12 +87,12 @@ namespace Service
         {
             RouteLeg leg = new RouteLeg();
 
-            string origin = $"origin={startPoint.Lat},{startPoint.Lng}";
-            string destination = $"destination={endPoint.Lat},{endPoint.Lng}";
+            string origin = $"origin={startPoint.Point.Lat},{startPoint.Point.Lng}";
+            string destination = $"destination={endPoint.Point.Lat},{endPoint.Point.Lng}";
 
-            string key = @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
+            string key = AppConfiguration["googleApi.Key"];  //@"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
 
-            string url = @"https://maps.googleapis.com/maps/api/directions/json?" + 
+            string url = AppConfiguration["googleApi.DirectionsUrl"] + //@"https://maps.googleapis.com/maps/api/directions/json?" + 
                 origin + "&" + destination + "&key=" + key;
 
             WebRequest request = WebRequest.Create(url);
@@ -114,8 +117,8 @@ namespace Service
 
 
 
-            leg.StartPoint = startPoint.MarkerId;
-            leg.EndPoint = endPoint.MarkerId;
+            leg.StartPoint = startPoint.PointId;
+            leg.EndPoint = endPoint.PointId;
             leg.Distance = (int)jLeg.SelectToken("distance").SelectToken("value");
             leg.Duration = (int)jLeg.SelectToken("duration").SelectToken("value");
             //string address = jObj["results"].FirstOrDefault().SelectToken("formatted_address").ToString();
@@ -156,24 +159,25 @@ namespace Service
                     case MarkerType.WayPoint:
                         if (string.IsNullOrEmpty(wayPoints))
                         {
-                            wayPoints += $"&waypoints=optimize:true|{marker.Lat},{marker.Lng}";
+                            wayPoints += $"&waypoints=optimize:true|{marker.Point.Lat},{marker.Point.Lng}";
                         }
                         else
                         {
-                            wayPoints += $"|{marker.Lat},{marker.Lng}";
+                            wayPoints += $"|{marker.Point.Lat},{marker.Point.Lng}";
                         }
                         break;
                     case MarkerType.StartPoint:
-                        origin = $"origin={marker.Lat},{marker.Lng}";
+                        origin = $"origin={marker.Point.Lat},{marker.Point.Lng}";
                         break;
                     case MarkerType.EndPoint:
-                        destination = $"&destination={marker.Lat},{marker.Lng}";
+                        destination = $"&destination={marker.Point.Lat},{marker.Point.Lng}";
                         break;
                 }
             }
 
-            string key = @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
-            string url = @"https://maps.googleapis.com/maps/api/directions/json?" + origin +
+            string key = AppConfiguration["googleApi.Key"];//@"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
+            string url = AppConfiguration["googleApi.DirectionsUrl"] + // @"https://maps.googleapis.com/maps/api/directions/json?" 
+                 origin +
                  destination +
                  wayPoints + options +
                 "&key=" + key;
@@ -193,27 +197,50 @@ namespace Service
 
             JObject jObj = JObject.Parse(responseFromServer);
             JToken jRoute = jObj["routes"].FirstOrDefault();
-            JToken jLeg = jRoute.SelectToken("legs").FirstOrDefault();
 
-            RouteLeg leg = new RouteLeg();
-            leg.Polyline = jRoute.SelectToken("overview_polyline").SelectToken("points").ToString();
+           string polyline = jRoute.SelectToken("overview_polyline").SelectToken("points").ToString();
+           var jLegs = jRoute.SelectToken("legs");
 
-            //leg.StartPoint = startPoint.MarkerId;
-            //leg.EndPoint = endPoint.MarkerId;
-            leg.Distance = (int)jLeg.SelectToken("distance").SelectToken("value");
-            leg.Duration = (int)jLeg.SelectToken("duration").SelectToken("value");
+            var legs = new List<RouteLeg>();
 
-            //var waypoint_order = new List<int>();
-            //foreach (var item in jRoute.SelectTokens("waypoint_order"))
-            //{
-            //    waypoint_order.Add((int)item);
-            //}
+            foreach (var jLeg in jLegs)
+            {
+                RouteLeg leg = new RouteLeg();
+
+                //float sLat = (float)jLeg.SelectToken("start_location").SelectToken("lat");
+                //float sLng = (float)jLeg.SelectToken("start_location").SelectToken("lng");
+                //float eLat = (float)jLeg.SelectToken("end_location").SelectToken("lat");
+                //float eLng = (float)jLeg.SelectToken("end_location").SelectToken("lng");
+
+                //leg.StartPoint = optimalRouteRequest.Markers.FirstOrDefault(x => x.Point.Lat == sLat && x.Point.Lng == sLng)?.PointId ?? 0;
+                //leg.EndPoint   = optimalRouteRequest.Markers.FirstOrDefault(x => x.Point.Lat == eLat && x.Point.Lng == eLng)?.PointId ?? 0;
+
+                leg.Distance = (int)jLeg.SelectToken("distance").SelectToken("value");
+                leg.Duration = (int)jLeg.SelectToken("duration").SelectToken("value");
+
+                legs.Add(leg);
+            }
+
+            legs[0].StartPoint = optimalRouteRequest.Markers.FirstOrDefault(x => x.MarkerType == MarkerType.StartPoint)?.PointId ?? 0;
+            foreach (var leg in legs)
+            {
+
+            }
+
             var waypoint_order = jRoute.SelectToken("waypoint_order").Select(x => (int)x).ToList();
-            var markers = MarkerService.MarkersWaypointsReOrder(optimalRouteRequest.Markers, waypoint_order);
+            var markers = MarkerService.MarkersWaypointsReOrder(optimalRouteRequest.Markers, waypoint_order).OrderBy(x => x.Index).ToArray();
 
-           return new MapOtimizedRouteResponce() {
-                Leg = leg,
-                Markers = markers
+
+            for (int i = 0; i < markers.Count() - 1; i++)
+            {
+                legs[i].StartPoint = markers[i].PointId;
+                legs[i].EndPoint = markers[i+1].PointId;
+            }
+
+            return new MapOtimizedRouteResponce() {
+                Legs = legs,
+                Markers = markers,
+                Polyline = polyline
             };
 
         }

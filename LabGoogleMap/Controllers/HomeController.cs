@@ -15,6 +15,7 @@ using Service;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Service.RequestModels;
+using Microsoft.Extensions.Configuration;
 
 namespace LabGoogleMap.Controllers {
 
@@ -24,12 +25,16 @@ namespace LabGoogleMap.Controllers {
         private readonly IMarkerIconService markerIconService;
         private readonly IRouteLegService routeLegService;
 
+        public IConfiguration AppConfiguration { get; set; }
+
         const int CustomerID = 1;
 
-        public HomeController (IMarkerService markerService, IMarkerIconService markerIconService, IRouteLegService routeLegService) {
+        public HomeController (IMarkerService markerService, IMarkerIconService markerIconService, IRouteLegService routeLegService,
+            IConfiguration config) {
             this.markerService = markerService;
             this.markerIconService = markerIconService;
             this.routeLegService = routeLegService;
+            AppConfiguration = config;
         }
 
         public IActionResult Index () {
@@ -53,7 +58,7 @@ namespace LabGoogleMap.Controllers {
                     });
                 }
 
-                marker.Address = GetGooglGeocodeAddress(marker);
+                marker.Point.Address = GetGooglGeocodeAddress(marker);
                 marker.CustomerID = CustomerID;
 
                 var markers = markerService.AddMarkerWithIndexUpdate (marker);
@@ -83,7 +88,7 @@ namespace LabGoogleMap.Controllers {
 
                 var responce = routeLegService.GetRouteLegs(markers);
 
-                return Json(new { success = true, legs = responce });
+                return Json(new { success = true, legs = responce, markers });
             }
             return Json(new
             {
@@ -128,10 +133,11 @@ namespace LabGoogleMap.Controllers {
 
         public string GetGooglGeocodeAddress(Marker marker)
         {
-            string key = @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
-            string lat = marker.Lat.ToString();
-            string lng = marker.Lng.ToString();
-            string url = @"https://maps.googleapis.com/maps/api/geocode/json?latlng=" + lat + "," + lng + "&key=" + key;
+            string key = AppConfiguration["googleApi.Key"];// @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
+            string lat = marker.Point.Lat.ToString();
+            string lng = marker.Point.Lng.ToString();
+            string url = AppConfiguration["googleApi.GeocodeUrl"]  //@"https://maps.googleapis.com/maps/api/geocode/json?latlng=" 
+            + lat + "," + lng + "&key=" + key;
 
             WebRequest request = WebRequest.Create(url);
             request.ContentType = "application/json; charset=utf-8";
