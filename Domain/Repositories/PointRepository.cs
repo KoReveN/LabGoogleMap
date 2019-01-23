@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Domain.Repositories
 {
-    class PointRepository : RepositoryBase<Point>, IPointRepository
+    public class PointRepository : RepositoryBase<Point>, IPointRepository
     {
         public PointRepository(IDbFactory dbFactory) : base(dbFactory)     {   }
 

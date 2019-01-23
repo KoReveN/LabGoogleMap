@@ -24,16 +24,18 @@ namespace LabGoogleMap.Controllers {
         private readonly IMarkerService markerService;
         private readonly IMarkerIconService markerIconService;
         private readonly IRouteLegService routeLegService;
+        private readonly IPointService pointService;
 
         public IConfiguration AppConfiguration { get; set; }
 
         const int CustomerID = 1;
 
         public HomeController (IMarkerService markerService, IMarkerIconService markerIconService, IRouteLegService routeLegService,
-            IConfiguration config) {
+            IPointService pointService, IConfiguration config) {
             this.markerService = markerService;
             this.markerIconService = markerIconService;
             this.routeLegService = routeLegService;
+            this.pointService = pointService;
             AppConfiguration = config;
         }
 
@@ -58,7 +60,7 @@ namespace LabGoogleMap.Controllers {
                     });
                 }
 
-                marker.Point.Address = GetGooglGeocodeAddress(marker);
+                marker.Point.Address = pointService.GetPointAddress(marker.Point);
                 marker.CustomerID = CustomerID;
 
                 var markers = markerService.AddMarkerWithIndexUpdate (marker);
@@ -131,33 +133,7 @@ namespace LabGoogleMap.Controllers {
         }
 
 
-        public string GetGooglGeocodeAddress(Marker marker)
-        {
-            string key = AppConfiguration["googleApi.Key"];// @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
-            string lat = marker.Point.Lat.ToString();
-            string lng = marker.Point.Lng.ToString();
-            string url = AppConfiguration["googleApi.GeocodeUrl"]  //@"https://maps.googleapis.com/maps/api/geocode/json?latlng=" 
-            + lat + "," + lng + "&key=" + key;
 
-            WebRequest request = WebRequest.Create(url);
-            request.ContentType = "application/json; charset=utf-8";
-            request.Method = WebRequestMethods.Http.Get;
-
-            WebResponse response = request.GetResponse();
-            Stream data = response.GetResponseStream();
-            StreamReader reader = new StreamReader(data);
-            // json-formatted string from maps api
-            string responseFromServer = reader.ReadToEnd();
-            reader.Close();
-            data.Close();
-            response.Close();
-
-            JObject jObj = JObject.Parse(responseFromServer);
-
-            string address = jObj["results"].FirstOrDefault().SelectToken("formatted_address").ToString();
-
-            return address;
-        }
 
         [HttpPost]
         public IActionResult MapMarkerRemove([FromBody] int markerId)
@@ -228,7 +204,40 @@ namespace LabGoogleMap.Controllers {
 
 
 
+//public string GetGooglGeocodeAddress(Marker marker)
+//{
+//    string key = AppConfiguration["googleApi:Key"];
+//    string url = AppConfiguration["googleApi:DirectionsUrl"];
+//    string geocodeUrl = AppConfiguration["googleApi:GeocodeUrl"];
+//    var googleApi = new GoogleApi.Direction(key, url, geocodeUrl);
 
+//    return googleApi.GetAddress(marker.Point);
+
+//    //string key = AppConfiguration["googleApi:Key"];// @"AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk";
+//    //string lat = marker.Point.Lat.ToString();
+//    //string lng = marker.Point.Lng.ToString();
+//    //string url = AppConfiguration["googleApi:GeocodeUrl"]  //@"https://maps.googleapis.com/maps/api/geocode/json?latlng=" 
+//    //+ lat + "," + lng + "&key=" + key;
+
+//    //WebRequest request = WebRequest.Create(url);
+//    //request.ContentType = "application/json; charset=utf-8";
+//    //request.Method = WebRequestMethods.Http.Get;
+
+//    //WebResponse response = request.GetResponse();
+//    //Stream data = response.GetResponseStream();
+//    //StreamReader reader = new StreamReader(data);
+//    //// json-formatted string from maps api
+//    //string responseFromServer = reader.ReadToEnd();
+//    //reader.Close();
+//    //data.Close();
+//    //response.Close();
+
+//    //JObject jObj = JObject.Parse(responseFromServer);
+
+//    //string address = jObj["results"].FirstOrDefault().SelectToken("formatted_address").ToString();
+
+//    //return address;
+//}
 
 
 

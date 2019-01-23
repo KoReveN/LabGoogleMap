@@ -253,18 +253,9 @@
             initIconsDropDownList: function () {
                 colorDropDownList = $('#colorSelect').kendoDropDownList(
                     {
-                        dataSource: colorDataSource,
+                        dataSource: colorDataSource.filter(x => x.color != "White"),
                         dataTextField: "color",
-                        dataValueField: "iconUrl",
-                        change: function () {
-                            // markerIconUrl = this.value();
-                            if (colorDropDownList.text() == "White") {
-                                if (marketTypeDropDownList.value() == 0) {
-                                    colorDropDownList.value(colorDropDownList._old);
-                                    toastr.error("White color only for start / end points");
-                                }
-                            }
-                        }
+                        dataValueField: "iconUrl"
                     }).data('kendoDropDownList');
             },
             initMarkerTypeDropDownList: function () {
@@ -275,11 +266,13 @@
                         dataValueField: "key",
                         change: () => {
                             if (marketTypeDropDownList.value() > 0) {
-                                colorDropDownList.text("White")
+                                colorDropDownList.dataSource.data(colorDataSource.filter(x => x.color == "White"));
+                                colorDropDownList.select(0);
                                 colorDropDownList.enable(false);
-                            } else {
+                            } else if (colorDropDownList.dataSource.total() < 2){
                                 colorDropDownList.enable(true);
-                                colorDropDownList.value(colorDropDownList._old);
+                                colorDropDownList.dataSource.data(colorDataSource.filter(x => x.color != "White"));
+                                colorDropDownList.select(0);
                             }
                         },
                     }).data('kendoDropDownList');
@@ -408,8 +401,9 @@
                     //}),
                     map: map,
                     markerType: markerType,
-                    index: index
+                    index: index,
                 });
+                marker.addListener('click', helper.selectMarker);
                 return marker;
             },
             addMarker: function (modelMarker) {
@@ -487,15 +481,15 @@
                         modelMarkers.find(x => x.index == newIndex).markerIconId = item.markerIconId;
                         if (newIndex == 0) {
 
-                            item.markerType == 1;
+                            item.markerType = 1;
                             item.markerIconId = 5;
                         } else if (newIndex == 10) {
-                            item.markerType == 2
+                            item.markerType = 2
                             item.markerIconId = 5;
                         }
                     } else {
                         if (item.markerType > 0) {
-                            item.markerType == 0
+                            item.markerType = 0
                             item.markerIconId = 0;
                         }
                     }
@@ -579,20 +573,33 @@
                     useSimpleRoute ? actions.getRoute() : actions.getOptimalRoute();
                 }
             },
-            animateMarker: (e) => {
-                e.preventDefault();
+            selectMarker: (e) => {
+               var selectedMarker = modelMarkers.find(x => x.point.lat.toFixed(2) == e.latLng.lat().toFixed(2) && x.point.lng.toFixed(2) == e.latLng.lng().toFixed(2))
+                var row = grid.tbody.find("tr[data-uid='" + grid._data.find(x => x.index == selectedMarker.index).uid + "']");
+                helper.animateMarker(row);
+            },
+            animateMarker: (row) => {
              //   var selectedItem = grid.dataItem($(e.currentTarget).closest("tr"));
-
-                $(e.currentTarget).toggleClass('k-state-selected');
-                var selectedItem = grid.dataItem(grid.select());
-                //var row = grid.select();
-                //var data = grid.dataItem(row);
 
                 markers.forEach((marker) => {
                     marker.setAnimation(null);
                 });
 
-                markers.find(x => x.index == selectedItem.index).setAnimation(google.maps.Animation.BOUNCE);
+                var isRowSelected = $(row).hasClass('k-state-selected');
+                $(row.parentElement).find("tr").removeClass('k-state-selected');
+
+                if (isRowSelected) {
+                    $(row).removeClass('k-state-selected');
+                } else {
+                    $(row).addClass('k-state-selected');
+                    var selectedItem = grid.dataItem(grid.select());
+                    markers.find(x => x.index == selectedItem.index).setAnimation(google.maps.Animation.BOUNCE);
+                }
+
+                //$(e.currentTarget).toggleClass('k-state-selected');
+                
+                //var row = grid.select();
+                //var data = grid.dataItem(row);
 
 
             },
@@ -700,7 +707,10 @@
             $("#buildRoute").click(actions.getRoute);
             $("#btn-optimalRoute").click(actions.getOptimalRoute);
 
-            $("#routeTable table tr").click((e) => helper.animateMarker(e));
+            $("#routeTable table tr").click((e) => {
+                e.preventDefault();
+                helper.animateMarker(e.currentTarget);
+            });
         }
 
 

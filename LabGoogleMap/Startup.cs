@@ -45,15 +45,17 @@ namespace LabGoogleMap
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            services.AddSingleton<IConfigurationRoot>(Configuration);
+           // services.AddSingleton<IConfigurationRoot>(Configuration);
             //services.AddTransient<IConfiguration>(provider => Configuration);
             services.AddTransient<LabContext, LabContext>();
             services.AddTransient <IDbFactory, DbFactory> ();
 
+            services.AddTransient<IPointRepository, PointRepository>();
             services.AddTransient<IMarkerRepository, MarkerRepository>();
             services.AddTransient<IMarkerIconRepository, MarkerIconRepository>();
             services.AddTransient<IRouteLegRepository, RouteLegRepository>();
 
+            services.AddTransient<IPointService, PointService>();
             services.AddTransient<IMarkerService, MarkerService>();
             services.AddTransient<IMarkerIconService, MarkerIconService>();
             services.AddTransient<IRouteLegService, RouteLegService>();

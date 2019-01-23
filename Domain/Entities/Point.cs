@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using GoogleApi;
 
 namespace Domain.Entities
 {
-    public class Point
+    public class Point : IPoint
     {
         public int PointId { get; set; }
         public float Lat { get; set; }
