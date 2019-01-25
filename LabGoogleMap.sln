@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Service", "Service\Service.csproj", "{3F638878-E17F-434F-96C4-7FBEEEE413C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleApi", "GoogleApi\GoogleApi.csproj", "{54F023A9-AB5F-47C9-AE9A-47AE1F9ADFE7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoogleApi", "GoogleApi\GoogleApi.csproj", "{54F023A9-AB5F-47C9-AE9A-47AE1F9ADFE7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

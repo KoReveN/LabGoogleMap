@@ -18,7 +18,8 @@ namespace Domain
 
 
 
-        public LabContext() 
+        public LabContext(DbContextOptions<LabContext> options)
+            : base(options)
         {
             //Database.EnsureDeleted();
             Database.EnsureCreated();

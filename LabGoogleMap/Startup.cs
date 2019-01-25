@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Service;
@@ -36,19 +37,14 @@ namespace LabGoogleMap
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            //services.Configure<ApiBehaviorOptions>(options =>
-            //{
-            //    options.SuppressConsumesConstraintForFormFileParameters = true;
-            //    options.SuppressInferBindingSourcesForParameters = true;
-            //    options.SuppressModelStateInvalidFilter = true;
-            //});
+
+            var dbConnectionString = Configuration["ConnectionString"];
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-           // services.AddSingleton<IConfigurationRoot>(Configuration);
-            //services.AddTransient<IConfiguration>(provider => Configuration);
-            services.AddTransient<LabContext, LabContext>();
-            services.AddTransient <IDbFactory, DbFactory> ();
+            //services.AddTransient<LabContext, LabContext>();
+            services.AddDbContext<LabContext>(options => options.UseSqlServer(dbConnectionString));
+            services.AddTransient <IDbFactory, DbFactory>();
 
             services.AddTransient<IPointRepository, PointRepository>();
             services.AddTransient<IMarkerRepository, MarkerRepository>();
@@ -77,8 +73,6 @@ namespace LabGoogleMap
                 app.UseHsts();
             }
 
-           // app.UseMiddleware<ConfigMiddleware>();
-
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
@@ -92,49 +86,8 @@ namespace LabGoogleMap
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
 
-            //            routes.MapRouteLowerCase(
-            //    name: "Default",
-            //    url: "{controller}/{action}/{id}",
-            //    defaults: new { controller = "dashboard", action = "index", id = UrlParameter.Optional }
-            //);    
-
-            //// Attribute routing
-            ///
-            //var routeOptions = new RouteOptions();
-            //routeOptions.ConstraintMap.Add("hasroutevalue", typeof(RouteValuePresentConstraint));
-            //routeOptions.ConstraintMap.Add("values", typeof(ValuesConstraint));
-
-            //var constraintsResolver = new DefaultInlineConstraintResolver(
-            //    routeOptions
-            //    );
-
-            //routes.MapMvcAttributeRoutes(constraintsResolver);
-
-
-            //var constraintsResolver = new DefaultInlineConstraintResolver();
-            //constraintsResolver.ConstraintMap.Add("hasroutevalue", typeof(RouteValuePresentConstraint));
-            //constraintsResolver.ConstraintMap.Add("values", typeof(ValuesConstraint));
-            //routes.MapMvcAttributeRoutes(constraintsResolver);
-
         }
     }
 
-    public class ConfigMiddleware
-    {
-        private readonly RequestDelegate _next;
-
-        public ConfigMiddleware(RequestDelegate next, IConfiguration config)
-        {
-            _next = next;
-            AppConfiguration = config;
-        }
-        public IConfiguration AppConfiguration { get; set; }
-
-        public async Task Invoke(HttpContext context)
-        {
-            var color = AppConfiguration["color"];
-            var text = AppConfiguration["text"];
-            await context.Response.WriteAsync($"<p style='color:{color};'>{text}</p>");
-        }
-    }
+   
 }

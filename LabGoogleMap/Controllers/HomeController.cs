@@ -1,42 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 using Domain.Entities;
-using Domain.Repositories;
 using LabGoogleMap.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Service;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 using Service.RequestModels;
 using Microsoft.Extensions.Configuration;
 
-namespace LabGoogleMap.Controllers {
+namespace LabGoogleMap.Controllers
+{
 
     public class HomeController : Controller {
-        //private readonly MapService mapService;
         private readonly IMarkerService markerService;
         private readonly IMarkerIconService markerIconService;
         private readonly IRouteLegService routeLegService;
         private readonly IPointService pointService;
 
-        public IConfiguration AppConfiguration { get; set; }
-
         const int CustomerID = 1;
 
         public HomeController (IMarkerService markerService, IMarkerIconService markerIconService, IRouteLegService routeLegService,
-            IPointService pointService, IConfiguration config) {
+            IPointService pointService) {
             this.markerService = markerService;
             this.markerIconService = markerIconService;
             this.routeLegService = routeLegService;
             this.pointService = pointService;
-            AppConfiguration = config;
         }
 
         public IActionResult Index () {
@@ -90,7 +77,7 @@ namespace LabGoogleMap.Controllers {
 
                 var responce = routeLegService.GetRouteLegs(markers);
 
-                return Json(new { success = true, legs = responce, markers });
+                return Json(new { success = true, legs = responce.Legs, markers, responce.LegsFromDbCount });
             }
             return Json(new
             {
@@ -100,7 +87,7 @@ namespace LabGoogleMap.Controllers {
         }
 
         [HttpPost]
-        public IActionResult GetGoogleOptimalRoute([FromBody] MapOptimalRouteRequest optimalRouteRequest)
+        public IActionResult GetGoogleOptimalRoute([FromBody] MapOtimizedRouteRequest optimalRouteRequest)
         {
             if (optimalRouteRequest.Markers.Count() > 1)
             {

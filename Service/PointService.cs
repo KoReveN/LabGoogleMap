@@ -28,9 +28,8 @@ namespace Service
         public string GetPointAddress(Point point)
         {
             string key = AppConfiguration["googleApi:Key"];
-            string url = AppConfiguration["googleApi:DirectionsUrl"];
             string geocodeUrl = AppConfiguration["googleApi:GeocodeUrl"];
-            var googleApi = new GoogleApi.Direction(key, url, geocodeUrl);
+            var googleApi = new GoogleApi.Geocode(key, geocodeUrl);
 
             return googleApi.GetAddress(point);
         }

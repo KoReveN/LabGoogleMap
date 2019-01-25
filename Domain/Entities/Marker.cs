@@ -9,7 +9,6 @@ namespace Domain.Entities
     {
         public int MarkerId { get; set; }
         public int CustomerID { get; set; }
-        //public int RouteID { get; set; } // fro multiple routs for one customer
         public int PointId { get; set; }
         public int MarkerIconId { get; set; }
         public MarkerType MarkerType { get; set; }

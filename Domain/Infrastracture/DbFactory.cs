@@ -8,9 +8,14 @@ namespace Domain.Infrastracture
     {
         LabContext dbContext;
 
+        public DbFactory(LabContext dbContext)
+        {
+            this.dbContext = dbContext;
+        }
+
         public LabContext Init()
         {
-            return dbContext ?? (dbContext = new LabContext());
+            return dbContext;// ?? (dbContext = new LabContext(connectionString));
         }
 
         protected override void DisposeCore()

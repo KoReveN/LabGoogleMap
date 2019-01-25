@@ -72,17 +72,24 @@ namespace Service {
                     var markersToUpdate = markerRepository.GetMany (x => x.CustomerID == marker.CustomerID && x.Index >= marker.Index);
                     foreach (var markerToUpdate in markersToUpdate) {
                         if (markerToUpdate.MarkerType == MarkerType.StartPoint)
+                        {
                             markerToUpdate.MarkerType = MarkerType.WayPoint;
+                            markerToUpdate.MarkerIconId = 1;
+                        }
 
                         markerToUpdate.Index++;
                         markerRepository.Update(markerToUpdate);
 
                     }
                 } else {
-                    var markerToUpdate = markerRepository.Get(x => x.CustomerID == marker.CustomerID && x.MarkerType == MarkerType.EndPoint);
-                    markerToUpdate.Index = markerRepository.GetLastPointIndex(marker.CustomerID) + 1;
-                    markerToUpdate.MarkerType = MarkerType.WayPoint;
-                    markerRepository.Update(markerToUpdate);
+                    var markersToUpdate = markerRepository.GetMany(x => x.CustomerID == marker.CustomerID && x.MarkerType == MarkerType.EndPoint);
+                    foreach (var markerToUpdate in markersToUpdate)
+                    {
+                        markerToUpdate.Index = markerRepository.GetLastPointIndex(marker.CustomerID) + 1;
+                        markerToUpdate.MarkerType = MarkerType.WayPoint;
+                        markerToUpdate.MarkerIconId = 1;
+                        markerRepository.Update(markerToUpdate);
+                    }
                 }
 
                 markerRepository.Add (marker);
@@ -143,7 +150,7 @@ namespace Service {
                 currIndex++;
             }
 
-            foreach (var item in markers.Where(x => x.MarkerType != MarkerType.WayPoint && x.MarkerIconId == 5))
+            foreach (var item in markers.Where(x => x.MarkerType == MarkerType.WayPoint && x.MarkerIconId == 5))
             {
                 item.MarkerIconId = 1;
             }

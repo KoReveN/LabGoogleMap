@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace Service.RequestModels
 {
-    public class MapOptimalRouteRequest
+    public class MapOtimizedRouteRequest
     {
         public IEnumerable<Marker> Markers { get; set; }
         public TrafficModel OptimalRouteOption { get; set; }
 
-        public MapOptimalRouteRequest()
+        public MapOtimizedRouteRequest()
         {
             Markers = new List<Marker>();
         }

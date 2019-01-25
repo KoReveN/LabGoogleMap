@@ -1,20 +1,16 @@
 ﻿@model MapViewModel
 @using LabGoogleMap.Helpers
 @using Service.RequestModels
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 @{
     //  ViewData["Title"] = "Home Page";
     ViewBag.Title = "Google map";
 
+    var trafficModelDataSource = EnumHelper.GetEnumDataSource<TrafficModel>().ToList();
+    var markerTypeDataSource = EnumHelper.GetEnumDataSource<Domain.Entities.MarkerType>().ToList();
 
-    var trafficModelDataSource = EnumHelper.GetEnumDataSource(TrafficModel.best_guess).ToList();
-    var markerTypeDataSource = EnumHelper.GetEnumDataSource(Domain.Entities.MarkerType.EndPoint).ToList();
-
-
-
-    // var ss = Enum.GetNames(typeof(TrafficModel));
-
-    // var qq = Enum.GetValues(typeof(TrafficModel));
-    //  var sss = "";
+    var googleApiKey = Configuration["googleApi:Key"];
 }
 
 
@@ -57,8 +53,7 @@
 
 @section scripts
     {
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk&libraries=geometry" defer></script>
-    @*<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3YhAyyckDAMFGuVR7yRI-fG_NATvL8Yk&libraries=geometry"></script>*@
+    <script src="https://maps.googleapis.com/maps/api/js?key=@googleApiKey&libraries=geometry" defer></script>
     <script defer>
         //require(["jquery", "kendogrids", "ajax", "toastr"], function ($, kendoGrid, ajax, toastr) {
 
@@ -70,12 +65,11 @@
         var urlMapGetSimpleRoute = "@Url.Action("GetGoogleSimpleRoute")";
         var urlMapGetOptimalRoute = "@Url.Action("GetGoogleOptimalRoute")";
         var colorDataSource =  @Html.Raw(Json.Serialize(Model.MarkerIcons.ToArray()));
-        //   var routeOptionsDataSource = ["Pissimistic", "Best guess", "Optimistic"];
 
         var routeOptionsDataSource = @Html.Raw(Json.Serialize(trafficModelDataSource));
         var markerTypeDataSource = @Html.Raw(Json.Serialize(markerTypeDataSource));
 
-        var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray())); 
+        var modelMarkers = @Html.Raw(Json.Serialize(@Model.Markers.ToArray()));
         var modelLegs = [];
 
         var needUpdateAllIndex = false;
@@ -142,7 +136,7 @@
                     }
                 });
             },
-            removeMapMarkers: function (lat, lng, color) {
+            removeMapMarkers: function () {
                 ajax.json({
                     url: urlMapMarkersRemove,
                     success: function (responce) {
@@ -175,9 +169,8 @@
                             toastr.success("Updated markers!");
                             modelMarkers = responce.markers;
                             render.renderMarkersFromModel();
-                          //  helper.addMarker(responce.markers);
                             console.log("Updated markers!");
-                            useSimpleRoute ? helper.updateRoute() : render.clearPolylines();       
+                            useSimpleRoute ? helper.updateRoute() : render.clearPolylines();
                         } else {
                             toastr.error("Fail: " + responce.message);
                             console.log("Fail: " + responce.message);
@@ -196,8 +189,19 @@
                     data: modelMarkers,
                     success: (responce) => {
                         if (responce.success) {
-                            toastr.success("Updated route!");
                             modelLegs = responce.legs;
+                            if (responce.legsFromDbCount == 0) {
+                                toastr.warning ("Info: All legs are derived from google Api");
+                            } else {
+
+                                if (responce.legsFromDbCount == responce.legs.length) {
+                                    toastr.success("Success: All legs found locally.");
+                                } else {
+                                    toastr.info(`Info: ${responce.legsFromDbCount} of ${responce.legs.length} legs found locally`);
+                                    //info: partial api / db
+                                    //success: all from db (LEG)
+                                }
+                            }
                             modelMarkers = responce.markers;
                             render.renderPolylines(modelLegs);
                             render.renderMarkersFromModel();
@@ -276,7 +280,7 @@
                             }
                         },
                     }).data('kendoDropDownList');
-            },             
+            },
             initRouteOptionsDropDownList: function () {
                 $('#routeOptionSelect').kendoDropDownList(
                     {
@@ -385,13 +389,7 @@
             createGoogleMarker: function (location, map, markerIcon, lable, markerType, index) {
                 var marker = new google.maps.Marker({
                     position: location,
-                    label: {
-                        text: lable, //labelIndex.toString(),//labels[labelIndex++ % labels.length],
-                        // color: "#eb3a44",
-                        fontSize: "16px",
-                        fontWeight: "bold"
-
-                    },
+                    label: lable,
                     icon: {
                         url: markerIcon, //markerIconUrl
                         labelOrigin: new google.maps.Point(33, 21),
@@ -400,6 +398,7 @@
                     //    fillColor: $('#colorSelect').data('kendoDropDownList').value() //markerIconUrl
                     //}),
                     map: map,
+                    animation: google.maps.Animation.DROP,
                     markerType: markerType,
                     index: index,
                 });
@@ -427,7 +426,13 @@
                 (markerType == 1) ? lable = "S" :
                     (markerType == 2) ? lable = "E" :
                         lable = markerIndex.toString();
-                return lable;
+                return {
+                        text: lable, //labelIndex.toString(),//labels[labelIndex++ % labels.length],
+                        // color: "#eb3a44",
+                        fontSize: "16px",
+                        fontWeight: "bold"
+
+                    };
             },
             removeMarker: (e) => {
                 var ww = e.currentTarget;
@@ -438,26 +443,13 @@
                 getFreeMarkerIndex: function (markerType) {
                     switch (markerType) {
                         case 1: // markerType = Start Point
-                            //  if (modelMarkers.find(x => x.markerType == 1))
-                            //   {
-                            // NEED exempt FOR OLD START POINT
-                            /*
-                                    modelMarkers.forEach((marker) => {
-                                        marker.index ++;
-                                        if  (marker.markerType == 1)
-                                            marker.markerType = 0;
-                                      //  if  (marker.index != 10)
-                                      //      marker.label.text = marker.index;
-                                    });*/
-
-                            //  actions.updateMapMarkers(modelMarkers);
-                            // }
-                            var dropdownlist = $("#markerType").data("kendoDropDownList");
-                            dropdownlist.select(0);
+                            colorDropDownList.enable(true);
+                            colorDropDownList.dataSource.data(colorDataSource.filter(x => x.color != "White"));
+                            colorDropDownList.select(0);
+                            marketTypeDropDownList.select(0);
                             return 0;
                             break;
                         case 2: // markerType = End Point
-                            // NEED CHECK FOR OLD END POINT
                             return 10;
                             break;
                         default: // markerType = Way Point
@@ -473,26 +465,38 @@
                 },
                 changeMarkerPosition: (oldIndex, newIndex) => {
                     //var positionToInsert = modelMarkers.indexOf(modelMarkers.find(x => x.index == newIndex))
+
+                    let hasStartMarker = modelMarkers.find(x => x.markerType == 1) != null;
+                    let hasEndMarker = modelMarkers.find(x => x.markerType == 2) != null;
+
+
                     var item = modelMarkers.find(x => x.index == oldIndex);
                     modelMarkers = modelMarkers.filter(x => x.index != oldIndex);
 
-                    if (newIndex == 0 || newIndex == 10) {
-                        modelMarkers.find(x => x.index == newIndex).markerType = item.markerType;
-                        modelMarkers.find(x => x.index == newIndex).markerIconId = item.markerIconId;
-                        if (newIndex == 0) {
+                    //if (newIndex == 0 || newIndex == 10) {
+                    //    modelMarkers.find(x => x.index == newIndex).markerType = item.markerType;
+                    //    modelMarkers.find(x => x.index == newIndex).markerIconId = item.markerIconId;
+                    //    modelMarkers.find(x => x.index == newIndex).markerIcon = colorDataSource.find(x => x.markerIconId == item.markerIconId);
+                    //    if (newIndex == 0) {
 
-                            item.markerType = 1;
-                            item.markerIconId = 5;
-                        } else if (newIndex == 10) {
-                            item.markerType = 2
-                            item.markerIconId = 5;
-                        }
-                    } else {
-                        if (item.markerType > 0) {
-                            item.markerType = 0
-                            item.markerIconId = 0;
-                        }
-                    }
+                    //        item.markerType = 1;
+                    //        item.markerIconId = 5;
+                    //        item.markerIcon = colorDataSource.find(x => x.markerIconId == 5);
+                    //    } else if (newIndex == 10) {
+                    //        item.markerType = 2
+                    //        item.markerIconId = 5;
+                    //        item.markerIcon = colorDataSource.find(x => x.markerIconId == 5);
+                    //    }
+                    //} else {
+                    //    if (item.markerType > 0) {
+                    //        modelMarkers.find(x => x.index == newIndex).markerType = item.markerType;
+                    //        modelMarkers.find(x => x.index == newIndex).markerIconId = item.markerIconId;
+                    //        modelMarkers.find(x => x.index == newIndex).markerIcon = colorDataSource.find(x => x.markerIconId == item.markerIconId);
+                    //        item.markerType = 0;
+                    //        item.markerIconId = 1;
+                    //        item.markerIcon = colorDataSource.find(x => x.markerIconId == 1);
+                    //    }
+                    //}
 
                     var timeMarkers = [];
 
@@ -508,22 +512,22 @@
                             m.index++;
                             timeMarkers.push(m);
                         })
-                        
+
                         modelMarkers.filter(x => x.index > oldIndex).forEach((m) => {
                           // m.index--;
                             timeMarkers.push(m);
                         })
                     } else
-                    {   
+                    {
                         modelMarkers.filter(x => x.index < oldIndex).forEach((m) => {
                             timeMarkers.push(m);
                         });
-                        
+
                          modelMarkers.filter(x => x.index > oldIndex && x.index <= newIndex).forEach((m) => {
                             m.index--;
                             timeMarkers.push(m);
                         })
-                        
+
                         item.index = newIndex;
                         timeMarkers.push(item);
 
@@ -531,30 +535,35 @@
                             timeMarkers.push(m);
                         });
                     }
+
+                    var index = hasStartMarker ? 0 : 1;
+                    
+                    timeMarkers.forEach((m) => {
+                        m.index = index;
+
+                        switch (index) {
+                            case 0:
+                                helper.modelMarkers.setMarkerType(m, 1);
+                            case 10:
+                                helper.modelMarkers.setMarkerType(m, 2);
+                                break;
+                            default:
+                                helper.modelMarkers.setMarkerType(m, 0);
+                        }
+
+                        index++;
+                    });
+
+                    if (hasEndMarker) {
+                        helper.modelMarkers.setMarkerType(timeMarkers[timeMarkers.length-1], 2);
+                    }
+
                     modelMarkers = timeMarkers;
 
 
 
-
-
-                    //modelMarkers = modelMarkers.filter(x => x.index != oldIndex); // remove old marker
-                    //modelMarkers.forEach((curr) => { // fill old index position
-                    //    if (curr.index > oldIndex) {
-                    //        curr.index--;
-                    //    }
-                    //});
-                    //modelMarkers.forEach((curr) => { // clear new position
-                    //    if (curr.index >= newIndex) {
-                    //        curr.index++;
-                    //    }
-                    //});
-
-                    //item.index = newIndex;
-                    //modelMarkers.splice(positionToInsert, 0, item); //  // add old marker with new index
-
-                    //render.gridRefresh();
                     render.renderMarkersFromModel();
-                    actions.updateMapMarkers(modelMarkers);
+                    actions.updateMapMarkers(timeMarkers);
                 },
                 removeMarker: (markerId) => {
                     let removeMarkerIndex = modelMarkers.find(x => x.markerId == markerId).index;
@@ -567,6 +576,17 @@
                     render.gridRefresh();
                     actions.updateMapMarkers(modelMarkers);
                 },
+                setMarkerType: (marker, markerType) => {
+                    marker.markerType = markerType;
+                    if (markerType > 0) {
+                        marker.markerIconId = 5;
+                        marker.markerIcon = colorDataSource.find(x => x.markerIconId == 5);
+                        //marker.index = marker.markerType == 1 ? 0 : 10;
+                    } else if (marker.markerIconId == 5) {
+                        marker.markerIconId = 1;
+                        marker.markerIcon = colorDataSource.find(x => x.markerIconId == 1);
+                    }
+                },
             },
             updateRoute: () => {
                 if (polylines.length > 0) {
@@ -576,13 +596,16 @@
             selectMarker: (e) => {
                var selectedMarker = modelMarkers.find(x => x.point.lat.toFixed(2) == e.latLng.lat().toFixed(2) && x.point.lng.toFixed(2) == e.latLng.lng().toFixed(2))
                 var row = grid.tbody.find("tr[data-uid='" + grid._data.find(x => x.index == selectedMarker.index).uid + "']");
-                helper.animateMarker(row);
+                helper.animateMarker($(row)[0]);
             },
             animateMarker: (row) => {
              //   var selectedItem = grid.dataItem($(e.currentTarget).closest("tr"));
 
                 markers.forEach((marker) => {
-                    marker.setAnimation(null);
+                    if (marker.getAnimation() !== null) {
+                        marker.setAnimation(null);
+                        marker.setLabel(helper.getMarkerLable(marker.index, marker.markerType));
+                    }
                 });
 
                 var isRowSelected = $(row).hasClass('k-state-selected');
@@ -593,11 +616,13 @@
                 } else {
                     $(row).addClass('k-state-selected');
                     var selectedItem = grid.dataItem(grid.select());
-                    markers.find(x => x.index == selectedItem.index).setAnimation(google.maps.Animation.BOUNCE);
+                    var marker = markers.find(x => x.index == selectedItem.index);
+                    marker.setLabel(null);
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
                 }
 
                 //$(e.currentTarget).toggleClass('k-state-selected');
-                
+
                 //var row = grid.select();
                 //var data = grid.dataItem(row);
 
@@ -608,6 +633,7 @@
         render = {
             renderMarkersFromModel: () => {
                 render.cleanMapMarkers();
+                markers = [];
                // Add a markers from the viewModel.
                 $.each(modelMarkers, function (index, item) {
                     helper.addMarker(item);
@@ -707,18 +733,12 @@
             $("#buildRoute").click(actions.getRoute);
             $("#btn-optimalRoute").click(actions.getOptimalRoute);
 
-            $("#routeTable table tr").click((e) => {
+            $("#routeTable").on("click", " .k-grid-content table tr", (e) => {
                 e.preventDefault();
                 helper.animateMarker(e.currentTarget);
             });
         }
 
-
-
-
-            //var setModelMarkers = function () {
-            //    var markers = modelMarkers; //JSON.parse(modelMarkers);
-            //}
 
         function _init() {
 
@@ -788,6 +808,6 @@
 
 
 @*<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>*@
+        <h1 class="display-4">Welcome</h1>
+        <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    </div>*@

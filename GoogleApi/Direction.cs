@@ -9,13 +9,12 @@ namespace GoogleApi
 {
     public class Direction
     {
-        string googleApiKey , googleDirectionUrl, googleGeocodeUrl;
+        string googleApiKey , googleDirectionUrl;
 
-        public Direction(string googleApiKey_, string googleDirectionUrl_, string googleGeocodeUrl_)
+        public Direction(string googleApiKey_, string googleDirectionUrl_)
         {
             googleApiKey = googleApiKey_;
             googleDirectionUrl = googleDirectionUrl_;
-            googleGeocodeUrl = googleGeocodeUrl_;
         }
 
 
@@ -117,32 +116,6 @@ namespace GoogleApi
                 WaypointOrder = waypoint_order,
                 Legs = legs
             };
-        }
-
-
-        public string GetAddress(IPoint point)
-        {
-            string lat = point.Lat.ToString();
-            string lng = point.Lng.ToString();
-            string url = googleGeocodeUrl + lat + "," + lng + "&key=" + googleApiKey;
-
-            WebRequest request = WebRequest.Create(url);
-            request.ContentType = "application/json; charset=utf-8";
-            request.Method = WebRequestMethods.Http.Get;
-
-            WebResponse response = request.GetResponse();
-            Stream data = response.GetResponseStream();
-            StreamReader reader = new StreamReader(data);
-            string responseFromServer = reader.ReadToEnd();
-            reader.Close();
-            data.Close();
-            response.Close();
-
-            JObject jObj = JObject.Parse(responseFromServer);
-
-            string address = jObj["results"].FirstOrDefault().SelectToken("formatted_address").ToString();
-
-            return address;
         }
 
     }

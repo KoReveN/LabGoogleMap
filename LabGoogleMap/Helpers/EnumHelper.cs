@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Service.RequestModels;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace LabGoogleMap.Helpers
         }
 
 
-        public static Dictionary<int, string> GetEnumDataSource<T>(T var)
+        public static Dictionary<int, string> GetEnumDataSource<T>() 
         {
             var enumDatasource = new Dictionary<int, string>();
            var enumList = Enum.GetValues(typeof(T));
@@ -34,12 +35,15 @@ namespace LabGoogleMap.Helpers
                 enumDatasource.Add((int)item, enumDescription);
             }
 
-            // typeof(Service.RequestModels.TrafficModel)
             return enumDatasource;
         }
 
 
-
+        //public static void  ff ()
+        //{
+        //    //TrafficModel.best_guess
+        //    GetEnumDataSource<TrafficModel>();
+        //}
 
 
     }
