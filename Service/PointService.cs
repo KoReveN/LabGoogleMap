@@ -1,4 +1,4 @@
-﻿using DAL.
+﻿using DAL;
 using Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

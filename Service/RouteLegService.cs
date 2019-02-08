@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using Service.RequestModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
-using DAL.
+using DAL;
 
 namespace Service
 {
