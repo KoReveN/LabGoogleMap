@@ -1,7 +1,10 @@
-﻿using Domain.Entities;
-using Domain.Repositories;
+﻿
+using DAL;
+using Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Service
@@ -14,17 +17,18 @@ namespace Service
 
     public class MarkerIconService : IMarkerIconService
     {
-        private readonly IMarkerIconRepository markerIconRepository;
+        private readonly LabContext db;
+        private readonly DbSet<MarkerIcon> dbSet;
 
-        public MarkerIconService (IMarkerIconRepository markerIconRepository)
+        public MarkerIconService (LabContext db_)
         {
-            this.markerIconRepository = markerIconRepository;
+            this.db = db_;
+            this.dbSet = db_.Set<MarkerIcon>();
         }
 
         public IEnumerable<MarkerIcon> GetMarkerIcons()
         {
-            return markerIconRepository.GetAll();
-           // return db.MarkerIcons;
+            return dbSet.ToList();
         }
     }
 }

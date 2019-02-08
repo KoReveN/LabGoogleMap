@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using GoogleApi;
 
-namespace Domain.Entities
+namespace Entities
 {
     public class Point : IPoint
     {

@@ -8,55 +8,163 @@
     ViewBag.Title = "Google map";
 
     var trafficModelDataSource = EnumHelper.GetEnumDataSource<TrafficModel>().ToList();
-    var markerTypeDataSource = EnumHelper.GetEnumDataSource<Domain.Entities.MarkerType>().ToList();
+    var markerTypeDataSource = EnumHelper.GetEnumDataSource<Entities.MarkerType>().ToList();
 
     var googleApiKey = Configuration["googleApi:Key"];
 }
 
-
-
-
 <div class="space-10"></div>
 
-
-
-<div id="test1"></div>
-
 <div>
-    Current marker:
-    @*<select id="markerType" asp-items="@Html.GetEnumSelectList(typeof(Domain.Entities.MarkerType))"></select>*@
-    <div id="markerType"></div>
-    <div id="colorSelect"></div>
-</div>
+    <!-- Навигация -->
+    <ul class="nav nav-tabs nav-pills" role="tablist">
+        @*nav nav-pills  nav-fill*@
+        <li class="nav-item"><a class="nav-link" href="#map-view" aria-controls="map-view" role="tab" data-toggle="tab">Map route planning</a></li>
+        <li class="nav-item"><a class="nav-link active" href="#places-view" aria-controls="places-view" role="tab" data-toggle="tab">Find and travel</a></li>
+        @*<li class="nav-item"><a class="nav-link disabled" href="#" aria-controls="Disabled" role="tab" data-toggle="tab">Disabled</a></li>*@
 
-<div class="space-20"></div>
-<div class="row">
+    </ul>
 
-    <input id="deleteMarkers" class="btn btn-danger margin-5" type=button value="Delete all markers">
-    <input id="buildRoute" class="btn btn-primary margin-5" type=button value="Build route">
+    <div id="test1"></div>
+    <div class="space-20"></div>
 
-    <div class="right">
-        <div id="routeOptionSelect" class="margin-5"></div>
-        <input id="btn-optimalRoute" class="btn margin-5" type=button value="Optimal route">
+    <div class="tab-content">
+
+
+        @* MAP TAB VIEW *@
+        <div role="tabpanel" class="tab-pane fade " id="map-view">
+            <div>
+                Current marker:
+                @*<select id="markerType" asp-items="@Html.GetEnumSelectList(typeof(Entities.MarkerType))"></select>*@
+                <div id="markerType"></div>
+                <div id="colorSelect"></div>
+            </div>
+
+            <div class="space-20"></div>
+            <div class="row">
+
+                <input id="deleteMarkers" class="btn btn-danger margin-5" type=button value="Delete all markers">
+                <input id="buildRoute" class="btn btn-primary margin-5" type=button value="Build route">
+
+                <div class="right">
+                    <div id="routeOptionSelect" class="margin-5"></div>
+                    <input id="btn-optimalRoute" class="btn margin-5" type=button value="Optimal route">
+                </div>
+            </div>
+
+            <div class="space-20"></div>
+
+            <div id="routeTable"></div>
+        </div>
+
+
+        @* Find and Travel TAB VIEW *@
+        <div role="tabpanel" class="tab-pane fade show active" id="places-view">
+
+            <div class="form-group row">
+                <h2 class="margin-5"> Select Address </h2>
+                @*Dropdown(with ability to type) containing saved places*@
+                <div id="addressSelect" class="margin-5">
+                    <input id="autocomplete"
+                           placeholder="Enter your address"
+                           onFocus="helper.geolocate()"
+                           type="text" />
+                </div>
+                <input id="btn-newPlace" class="btn margin-5" type=button value="+">
+            </div>
+
+            <table id="address">
+                <tr>
+                    <td class="label">Street address</td>
+                    <td class="slimField"><input class="field" id="street_number" disabled="true" /></td>
+                    <td class="wideField" colspan="2"><input class="field" id="route" disabled="true" /></td>
+                </tr>
+                <tr>
+                    <td class="label">City</td>
+                    <td class="wideField" colspan="3"><input class="field" id="locality" disabled="true" /></td>
+                </tr>
+                <tr>
+                    <td class="label">State</td>
+                    <td class="slimField"><input class="field" id="administrative_area_level_1" disabled="true" /></td>
+                    <td class="label">Zip code</td>
+                    <td class="wideField"><input class="field" id="postal_code" disabled="true" /></td>
+                </tr>
+                <tr>
+                    <td class="label">Country</td>
+                    <td class="wideField" colspan="3"><input class="field" id="country" disabled="true" /></td>
+                </tr>
+            </table>
+
+            <form class="jumbotron">
+                <h2>Address:</h2>
+
+                <div class="form-group  row">
+                    <label for="addressCategory" class="col-sm-3 col-form-label">Category</label>
+                    <div class="col-sm-9"><div class="form-control" id="addressCategory"></div></div>
+                    @**  Category (dropdown no ability to type)*@
+                </div>
+
+                <div class="form-group  row">
+                    <label for="addressCountry" class="col-sm-3 col-form-label">Country</label>
+                    <div class="col-sm-9"><div class="form-control" id="addressCountry"></div></div>
+                    @** Country (dropdown with ability to type with flag and iso code)*@
+                </div>
+
+                @*<div class="form-group row">
+                    <label for="addressProvince" class="col-sm-3 col-form-label">Province</label>
+                    <div class="col-sm-9"><input type="text" class="form-control" id="addressProvince"></div>
+                </div>
+
+                <div class="form-group row">
+                    <label for="locality" class="col-sm-3 col-form-label">City</label>
+                    <div class="col-sm-9"><input type="text" class="form-control" id="locality"></div>
+                </div>
+
+                <div class="form-group row">
+                    <label for="addressPostalCode" class="col-sm-3 col-form-label">Postal code</label>
+                    <div class="col-sm-9"><input type="text" class="form-control" id="addressPostalCode"></div>
+                </div>
+
+                <div class="form-group row">
+                    <label for="route" class="col-sm-3 col-form-label">Street</label>
+                    <div class="col-sm-9"><input type="text" class="form-control" id="route"></div>
+                </div>
+
+                <div class="form-group row">
+                    <label for="street_number" class="col-sm-3 col-form-label">Street number</label>
+                    <div class="col-sm-9"><input type="text" class="form-control" id="street_number"></div>
+                </div>
+
+                <div class="form-group row">
+                    <label for="addressPhone" class="col-sm-3 col-form-label">Telephone number</label>
+                    <div class="col-sm-9"><input type="text" class="form-control" id="addressPhone"></div>
+                </div>*@
+            </form>
+
+
+
+        </div>
+
+
     </div>
+
+
+
+    <div class="space-20"></div>
+    <div id="map"></div>
+
+
 </div>
-
-<div class="space-20"></div>
-
-<div id="routeTable"></div>
-
-<div class="space-20"></div>
-<div id="map"></div>
-
 
 
 
 @section scripts
     {
-    <script src="https://maps.googleapis.com/maps/api/js?key=@googleApiKey&libraries=geometry" defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=@googleApiKey&libraries=geometry,places" defer></script>
     <script defer>
         //require(["jquery", "kendogrids", "ajax", "toastr"], function ($, kendoGrid, ajax, toastr) {
 
+        
         // Settings
         var urlMapMarkerAdd = "@Url.Action("MapMarkerAdd")";
         var urlMapMarkersRemove = "@Url.Action("MapMarkersRemove")";
@@ -78,10 +186,20 @@
 
         var grid;
         var map;
+        var autocomplete;
         var colorDropDownList, marketTypeDropDownList;
         var markerIconUrl = "http://maps.google.com/mapfiles/kml/paddle/blu-circle.png";
         var markers = [];
         var polylines = [];
+
+        var acddressComponentForm = {
+            street_number: 'short_name',
+            route: 'long_name',
+            locality: 'long_name',
+            administrative_area_level_1: 'short_name',
+            country: 'long_name',
+            postal_code: 'short_name'
+        };
 
             // Actions
         var actions = {
@@ -254,6 +372,27 @@
         };
 
         var helper = {
+            initTravelsDropDownList: function () {
+                $('#addressCategory').kendoDropDownList(
+                    {
+                        dataSource: [],
+                        dataTextField: "value",
+                        dataValueField: "key",
+                    });
+                $('#addressCountry').kendoDropDownList(
+                    {
+                        dataSource: [],
+                        dataTextField: "value",
+                        dataValueField: "key",
+                    });
+                //$('#addressSelect').kendoDropDownList(
+                //    {
+                //        dataSource: [],
+                //        dataTextField: "value",
+                //        dataValueField: "key",
+                //    });
+                //
+            },
             initIconsDropDownList: function () {
                 colorDropDownList = $('#colorSelect').kendoDropDownList(
                     {
@@ -385,6 +524,20 @@
                 //    fillColor: '#fff',
                 //    strokeColor: '#000'
                 //}));
+            },
+            initGoogleAutocomplate: function () {
+                autocomplete = new google.maps.places.Autocomplete(
+                    document.getElementById('autocomplete'), { types: ['geocode'] });
+
+                autocomplete.setComponentRestrictions(
+                    { 'country': ['ua', 'ru'] });
+
+                autocomplete.setFields('address_components');
+                  // Specify only the data fields that are needed.
+                //autocomplete.setFields(
+                //    ['address_components', 'geometry', 'icon', 'name']);
+
+                autocomplete.addListener('place_changed', helper.fillInAddress);
             },
             createGoogleMarker: function (location, map, markerIcon, lable, markerType, index) {
                 var marker = new google.maps.Marker({
@@ -537,7 +690,7 @@
                     }
 
                     var index = hasStartMarker ? 0 : 1;
-                    
+
                     timeMarkers.forEach((m) => {
                         m.index = index;
 
@@ -627,6 +780,38 @@
                 //var data = grid.dataItem(row);
 
 
+            },
+            geolocate: function () {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function (position) {
+                        var geolocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        var circle = new google.maps.Circle(
+                            { center: geolocation, radius: position.coords.accuracy });
+                        autocomplete.setBounds(circle.getBounds());
+                    });
+                }
+            },
+            fillInAddress: function () {
+                // Get the place details from the autocomplete object.
+                var place = autocomplete.getPlace();
+
+                for (var component in acddressComponentForm) {
+                    document.getElementById(component).value = '';
+                    document.getElementById(component).disabled = false;
+                }
+
+                // Get each component of the address from the place details,
+                // and then fill-in the corresponding field on the form.
+                for (var i = 0; i < place.address_components.length; i++) {
+                    var addressType = place.address_components[i].types[0];
+                    if (acddressComponentForm[addressType]) {
+                        var val = place.address_components[i][acddressComponentForm[addressType]];
+                        document.getElementById(addressType).value = val;
+                    }
+                }
             },
 
         },
@@ -745,10 +930,12 @@
             helper.initRouteTable();
             //google.maps.event.addDomListener(window, 'load', helper.initGoogleMap);
             helper.initGoogleMap();
+            helper.initGoogleAutocomplate();
             //setModelMarkers();
             helper.initIconsDropDownList();
             helper.initMarkerTypeDropDownList();
             helper.initRouteOptionsDropDownList();
+            helper.initTravelsDropDownList();
 
                 registerEventHandlers();
             }
@@ -757,7 +944,7 @@
                 _init();
             });
 
-        //});
+
     </script>
 
 }

@@ -1,5 +1,6 @@
-﻿using Domain.Entities;
-using Domain.Repositories;
+﻿using DAL.
+using Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -15,12 +16,14 @@ namespace Service
 
     public class PointService : IPointService
     {
-        private readonly IPointRepository pointRepository;
+        //private readonly LabContext db;
+        //private readonly DbSet<Point> dbSet;
         public IConfiguration AppConfiguration { get; set; }
 
-        public PointService(IPointRepository pointRepository, IConfiguration config)
+        public PointService(LabContext db_, IConfiguration config)
         {
-            this.pointRepository = pointRepository;
+            //this.db = db_;
+            //this.dbSet = db_.Set<Point>();
             AppConfiguration = config;
         }
 

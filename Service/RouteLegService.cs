@@ -1,5 +1,4 @@
-﻿using Domain.Entities;
-using Domain.Repositories;
+﻿using Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +9,8 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Service.RequestModels;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using DAL.
 
 namespace Service
 {
@@ -22,14 +23,16 @@ namespace Service
 
     public class RouteLegService : IRouteLegService
     {
-        private readonly IRouteLegRepository routeLegRepository;
+        private readonly LabContext db;
+        private readonly DbSet<RouteLeg> dbSet;
         public IConfiguration AppConfiguration { get; set; }
 
         GoogleApi.Direction googleApi;
 
-        public RouteLegService(IRouteLegRepository routeLegRepository, IConfiguration config)
+        public RouteLegService(LabContext db_, IConfiguration config)
         {
-            this.routeLegRepository = routeLegRepository;
+            this.db = db_;
+            this.dbSet = db_.Set<RouteLeg>();
             AppConfiguration = config;
 
             string key = AppConfiguration["googleApi:Key"];
@@ -54,8 +57,8 @@ namespace Service
             }
 
             // Get All legs by this route from local DB
-            legsResponce = routeLegRepository
-                .GetMany(repLeg =>
+            legsResponce = dbSet
+                .Where(repLeg =>
                     legsRequest.Any(r =>
                         r.StartPoint == repLeg.StartPoint && r.EndPoint == repLeg.EndPoint
                     )).ToList();
@@ -71,10 +74,10 @@ namespace Service
                 RouteLeg newLeg = GetLegByGoogleApi(markers.FirstOrDefault(m => m.PointId == leg.StartPoint),
                                     markers.FirstOrDefault(m => m.PointId == leg.EndPoint));
                 legsResponce.Add(newLeg);
-                routeLegRepository.Add(newLeg);
+                dbSet.Add(newLeg);
             }
 
-            routeLegRepository.Save();
+            db.SaveChanges();
 
             //return legsResponce;
             return new MapSimpleRouteResponce()

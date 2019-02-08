@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Domain.Entities;
+using Entities;
 using LabGoogleMap.Models;
 using Microsoft.AspNetCore.Mvc;
 using Service;

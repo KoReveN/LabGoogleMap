@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.28407.52
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LabGoogleMap", "LabGoogleMap\LabGoogleMap.csproj", "{371DBEB8-31D6-4ACD-A041-033E45D5082B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{DB0A72CE-E208-49C2-9EEA-F4A2EEF39FB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DAL", "DAL\DAL.csproj", "{DB0A72CE-E208-49C2-9EEA-F4A2EEF39FB8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Service", "Service\Service.csproj", "{3F638878-E17F-434F-96C4-7FBEEEE413C4}"
 EndProject

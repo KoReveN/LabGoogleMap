@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Domain;
-using Domain.Infrastracture;
-using Domain.Repositories;
+using DAL.
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -14,6 +12,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Service;
 
 namespace LabGoogleMap
@@ -41,15 +40,10 @@ namespace LabGoogleMap
             var dbConnectionString = Configuration["ConnectionString"];
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc().AddNewtonsoftJson();
 
             //services.AddTransient<LabContext, LabContext>();
             services.AddDbContext<LabContext>(options => options.UseSqlServer(dbConnectionString));
-            services.AddTransient <IDbFactory, DbFactory>();
-
-            services.AddTransient<IPointRepository, PointRepository>();
-            services.AddTransient<IMarkerRepository, MarkerRepository>();
-            services.AddTransient<IMarkerIconRepository, MarkerIconRepository>();
-            services.AddTransient<IRouteLegRepository, RouteLegRepository>();
 
             services.AddTransient<IPointService, PointService>();
             services.AddTransient<IMarkerService, MarkerService>();

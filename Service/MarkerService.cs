@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Domain.Entities;
-using Domain.Repositories;
+using DAL;
+using Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Service {
     public interface IMarkerService {
@@ -19,57 +20,61 @@ namespace Service {
 
     public class MarkerService : IMarkerService
     {
-        //private LabContext db;
-        private readonly IMarkerRepository markerRepository;
+        private readonly LabContext db;
+        private readonly DbSet<Marker> dbSet;
 
-        public MarkerService (IMarkerRepository markerRepository) {
-            this.markerRepository = markerRepository;
+        public MarkerService (LabContext db_) {
+            this.db = db_;
+            this.dbSet = db_.Set<Marker>();
         }
 
         public IEnumerable<Marker> GetMarkers (int customerID) {
-            return markerRepository.GetMany (x => x.CustomerID == customerID);
-            //return db.Markers.Where(x => x.CustomerID == customerID);
+            return dbSet.Include(x => x.Point).Where(x => x.CustomerID == customerID);
         }
 
         public void AddMarker (Marker marker) {
-            markerRepository.Add (marker);
-            markerRepository.Save ();
-            //db.Markers.Add(marker);
-            //db.SaveChanges();
+            dbSet.Add(marker);
+            db.SaveChanges();
         }
 
         public void RemoveMarker(int markerId)
         {
-            markerRepository.Delete(x => x.MarkerId == markerId);
-            markerRepository.Save();
+            IEnumerable<Marker> objects = dbSet.Where(x => x.MarkerId == markerId).AsEnumerable();
+            foreach (Marker obj in objects)
+                dbSet.Remove(obj);
+ 
+            db.SaveChanges();
         }
 
         public void RemoveMarkers (int customerID) {
-            markerRepository.Delete(x => x.CustomerID == customerID);
-            markerRepository.Save ();
+            IEnumerable<Marker> objects = dbSet.Where(x => x.CustomerID == customerID).AsEnumerable();
+            foreach (Marker obj in objects)
+                dbSet.Remove(obj);
+
+            db.SaveChanges();
         }
 
         public bool CanAddMarker(int customerID) {
-           return markerRepository.Count(x => x.CustomerID == customerID) <= 10;
+           return dbSet.Count(x => x.CustomerID == customerID) <= 10;
         }
 
         public IEnumerable<Marker> UpdateMarkers(IEnumerable<Marker> markers)
         {
             foreach (var marker in markers)
             {
-                markerRepository.Update(marker);
+                dbSet.Update(marker);
             }
-            markerRepository.Save();
+            db.SaveChanges();
             return markers;
         }
 
         public IEnumerable<Marker> AddMarkerWithIndexUpdate (Marker marker) {
-            var markerWithSameIndex = markerRepository.Get (x => x.CustomerID == marker.CustomerID && x.Index == marker.Index);
+            var markerWithSameIndex = dbSet.FirstOrDefault(x => x.CustomerID == marker.CustomerID && x.Index == marker.Index);
 
             if (markerWithSameIndex != null) {
                 // add new with update issue markers
                 if (marker.MarkerType != MarkerType.EndPoint) {
-                    var markersToUpdate = markerRepository.GetMany (x => x.CustomerID == marker.CustomerID && x.Index >= marker.Index);
+                    var markersToUpdate = dbSet.Where(x => x.CustomerID == marker.CustomerID && x.Index >= marker.Index);
                     foreach (var markerToUpdate in markersToUpdate) {
                         if (markerToUpdate.MarkerType == MarkerType.StartPoint)
                         {
@@ -78,32 +83,46 @@ namespace Service {
                         }
 
                         markerToUpdate.Index++;
-                        markerRepository.Update(markerToUpdate);
+                        dbSet.Update(markerToUpdate);
 
                     }
                 } else {
-                    var markersToUpdate = markerRepository.GetMany(x => x.CustomerID == marker.CustomerID && x.MarkerType == MarkerType.EndPoint);
+                    var markersToUpdate = dbSet.Where(x => x.CustomerID == marker.CustomerID && x.MarkerType == MarkerType.EndPoint);
                     foreach (var markerToUpdate in markersToUpdate)
                     {
-                        markerToUpdate.Index = markerRepository.GetLastPointIndex(marker.CustomerID) + 1;
+                        markerToUpdate.Index = GetLastPointIndex(marker.CustomerID) + 1;
                         markerToUpdate.MarkerType = MarkerType.WayPoint;
                         markerToUpdate.MarkerIconId = 1;
-                        markerRepository.Update(markerToUpdate);
+                        dbSet.Update(markerToUpdate);
                     }
                 }
 
-                markerRepository.Add (marker);
-                markerRepository.Save ();
+                dbSet.Add (marker);
+                db.SaveChanges();
 
-                return markerRepository.GetMany(x => x.CustomerID == marker.CustomerID);
+                return dbSet.Include(x => x.Point).Where(x => x.CustomerID == marker.CustomerID);
 
             } else {
-                markerRepository.Add (marker);
-                markerRepository.Save ();
+                dbSet.Add (marker);
+                db.SaveChanges();
 
                 return new List<Marker> () { marker };
             }
 
+        }
+
+
+        public int GetLastPointIndex(int customerId)
+        {
+            try
+            {
+                return dbSet.Where(m => m.CustomerID == customerId && m.MarkerType == MarkerType.WayPoint)
+                    .Max(m => m.Index);
+            }
+            catch (System.Exception)
+            {
+                return 0;
+            }
         }
 
 
