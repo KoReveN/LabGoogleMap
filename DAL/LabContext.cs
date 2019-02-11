@@ -15,6 +15,10 @@ namespace DAL
         public DbSet<MarkerIcon> MarkerIcons { get; set; }
         public DbSet<RouteLeg> RouteLegs { get; set; }
 
+        public DbSet<Country> Countries { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Address> Addresses { get; set; }
+        public DbSet<Place> Places { get; set; }
 
 
 
@@ -22,6 +26,7 @@ namespace DAL
             : base(options)
         {
             //Database.EnsureDeleted();
+            //https://docs.microsoft.com/en-us/ef/core/miscellaneous/cli/dotnet
             Database.EnsureCreated();
             DatabaseSeed();
         }
@@ -36,16 +41,12 @@ namespace DAL
         {
             if (!this.MarkerIcons.Any())
             {
-                MarkerIcons.AddRange(
-                        new List<MarkerIcon>() {
-                            new MarkerIcon("Blue",   "http://maps.google.com/mapfiles/kml/paddle/blu-blank.png"),
-                            new MarkerIcon("Red",    "http://maps.google.com/mapfiles/kml/paddle/red-blank.png"),
-                            new MarkerIcon("Green",  "http://maps.google.com/mapfiles/kml/paddle/grn-blank.png"),
-                            new MarkerIcon("Purple", "http://maps.google.com/mapfiles/kml/paddle/purple-blank.png"),
-                            new MarkerIcon("White",  "http://maps.google.com/mapfiles/kml/paddle/wht-blank.png"),
-                        }
-                    );
-                SaveChanges();
+                SeedDb.MarketIconsSeed(this);
+            }
+
+            if (!this.Countries.Any())
+            {
+                SeedDb.CountriesSeed(this);
             }
         }
 

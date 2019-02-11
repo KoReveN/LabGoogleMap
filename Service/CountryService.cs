@@ -7,21 +7,27 @@ using System.Text;
 
 namespace Service
 {
-    public class CountryService
+    public interface ICountryService
+    {
+        void ImportCountries(IEnumerable<Country> counries);
+    }
+
+    public class CountryService : ICountryService
     {
 
         private readonly LabContext db;
-        private readonly DbSet<Marker> dbSet;
+        private readonly DbSet<Country> dbSet;
 
         public CountryService(LabContext db_)
         {
             this.db = db_;
-            this.dbSet = db_.Set<Marker>();
+            this.dbSet = db_.Set<Country>();
         }
 
         public void ImportCountries(IEnumerable<Country> counries)
         {
-            //db.
+            dbSet.AddRange(counries);
+            db.SaveChanges();
         }
 
     }

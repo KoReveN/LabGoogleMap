@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Service;
 using Service.RequestModels;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LabGoogleMap.Controllers
 {
@@ -175,6 +176,36 @@ namespace LabGoogleMap.Controllers
             });
         }
 
+
+
+
+        [HttpPost]
+        public IActionResult ImportCountries([FromBody] Country[] countries)
+        {
+            try
+            {
+                var countryService = HttpContext.RequestServices.GetService<ICountryService>();
+                countryService.ImportCountries(countries);
+
+                return Ok();
+            }
+            catch (Exception)
+            {
+                return Json(new
+                {
+                    success = false
+                });
+            }
+
+
+            //countries
+            //var response = markerService.UpdateMarkers(markers);
+
+            return Json(new
+            {
+                success = true
+            });
+        }
 
 
     }

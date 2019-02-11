@@ -50,6 +50,8 @@ namespace LabGoogleMap
             services.AddTransient<IMarkerIconService, MarkerIconService>();
             services.AddTransient<IRouteLegService, RouteLegService>();
 
+            services.AddTransient<ICountryService, CountryService>();
+
 
         }
 

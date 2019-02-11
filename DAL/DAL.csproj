@@ -16,4 +16,10 @@
     <ProjectReference Include="..\GoogleApi\GoogleApi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="countries.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
